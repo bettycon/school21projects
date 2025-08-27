@@ -1,0 +1,7 @@
+1. Протокол транспортного уровня: UDP
+2. Source port: 123
+3. Destination port: 123
+4. Transmit timestamp в первом NTP пакете: Transmit Timestamp: Jan  1, 2020 10:00:24.384303651 UTC
+
+
+
