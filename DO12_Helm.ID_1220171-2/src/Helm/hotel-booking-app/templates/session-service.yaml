@@ -1,0 +1,19 @@
+{{- if .Values.session.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-session-service
+  labels:
+    {{- include "hotel-booking-app.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.session.service.type }}
+  selector:
+    app: session-service
+  ports:
+  - port: {{ .Values.session.service.port }}
+    targetPort: {{ .Values.session.service.targetPort }}
+    {{- if eq .Values.session.service.type "NodePort" }}
+    nodePort: {{ .Values.session.service.nodePort }}
+    {{- end }}
+    protocol: TCP
+{{- end }}

@@ -1,0 +1,105 @@
+{
+	"info": {
+		"_postman_id": "83994c1d-306d-4e45-b9b2-e54676612a7d",
+		"name": "HH.RU API",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "47500177",
+		"_collection_link": "https://bettycon-4912850.postman.co/workspace/bettycon's-Workspace~dbbcc434-78e3-4155-8b93-cdcef8d0950b/collection/47500177-83994c1d-306d-4e45-b9b2-e54676612a7d?action=share&source=collection_link&creator=47500177"
+	},
+	"item": [
+		{
+			"name": "https://hh.ru/vacancy/",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "accept",
+						"value": "application/json"
+					},
+					{
+						"key": "accept-language",
+						"value": "ru,ru-RU;q=0.9,en-US;q=0.8,en;q=0.7"
+					},
+					{
+						"key": "referer",
+						"value": "https://hh.ru/vacancy/124549327?from=applicant_recommended&hhtmFrom=main"
+					},
+					{
+						"key": "user-agent",
+						"value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+					},
+					{
+						"key": "x-requested-with",
+						"value": "XMLHttpRequest"
+					},
+					{
+						"key": "cookie",
+						"value": "__ddg1_=Ut3MXevdAHGWJ48RoHMA; hhtoken=kvsFQQhSy!YgPjGb7SeJxcqZjJfs; hhuid=oYU0TcbPtUO7VGd3wqUwhQ--; iap.uid=63c1e57e3a8649518119577fab3320c7"
+					}
+				],
+				"url": {
+					"raw": "https://hh.ru/shards/vacancy/contact_info?employer_id=10258689&id=124549327",
+					"protocol": "https",
+					"host": [
+						"hh",
+						"ru"
+					],
+					"path": [
+						"shards",
+						"vacancy",
+						"contact_info"
+					],
+					"query": [
+						{
+							"key": "employer_id",
+							"value": "10258689"
+						},
+						{
+							"key": "id",
+							"value": "124549327"
+						}
+					]
+				},
+				"description": "Generated from cURL: curl 'https://hh.ru/shards/vacancy/contact_info?employer_id=10258689&id=124549327' \\\r\n  -H 'accept: application/json' \\\r\n  -H 'accept-language: ru,ru-RU;q=0.9,en-US;q=0.8,en;q=0.7' \\\r\n  -H 'referer: https://hh.ru/vacancy/124549327?from=applicant_recommended&hhtmFrom=main' \\\r\n  -H 'user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' \\\r\n  -H 'x-requested-with: XMLHttpRequest' \\\r\n  -H 'cookie: __ddg1_=Ut3MXevdAHGWJ48RoHMA; hhtoken=kvsFQQhSy!YgPjGb7SeJxcqZjJfs; hhuid=oYU0TcbPtUO7VGd3wqUwhQ--; iap.uid=63c1e57e3a8649518119577fab3320c7'"
+			},
+			"response": []
+		}
+	],
+	"auth": {
+		"type": "apikey",
+		"apikey": [
+			{
+				"key": "value",
+				"value": "3ea946d564de4414b9b14d8c051fdd48",
+				"type": "string"
+			},
+			{
+				"key": "key",
+				"value": "3ea946d564de4414b9b14d8c051fdd48",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	]
+}

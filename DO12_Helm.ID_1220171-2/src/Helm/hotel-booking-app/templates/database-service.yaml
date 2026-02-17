@@ -1,0 +1,16 @@
+{{- if .Values.database.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-postgres-service
+  labels:
+    {{- include "hotel-booking-app.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.database.service.type }}
+  selector:
+    app: postgres
+  ports:
+  - port: {{ .Values.database.service.port }}
+    targetPort: {{ .Values.database.service.targetPort }}
+    protocol: TCP
+{{- end }}

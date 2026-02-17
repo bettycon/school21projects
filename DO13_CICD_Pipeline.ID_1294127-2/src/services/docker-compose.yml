@@ -1,0 +1,175 @@
+services:
+  rabbitmq:  #1
+    image: rabbitmq:3.12-management
+    container_name: rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: guest  
+      RABBITMQ_DEFAULT_PASS: guest
+      RABBITMQ_ENABLE_PROMETHEUS: "true"
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - betcon
+
+  database: #2
+    image: ${DOCKER_HUB_USERNAME}/${PROJECT_NAME}:database-${CI_COMMIT_SHA}
+    container_name: postgres
+    hostname: postgres  
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: master
+      POSTGRES_DB: users_db
+    ports:
+      - "5432:5432"  
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - betcon
+      
+  session-service: #3
+    image: ${DOCKER_HUB_USERNAME}/${PROJECT_NAME}:session-service-${CI_COMMIT_SHA}
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=master
+      - POSTGRES_DB=users_db
+    networks:
+      - betcon 
+    ports:
+      - "8081:8081"
+    depends_on:  
+      - database
+
+  hotel-service: #4
+    image: ${DOCKER_HUB_USERNAME}/${PROJECT_NAME}:hotel-service-${CI_COMMIT_SHA}
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=master
+      - POSTGRES_DB=hotels_db
+    networks:
+      - betcon
+    ports:
+      - "8082:8082"
+    depends_on:
+      - database
+      
+  booking-service: #5
+    image: ${DOCKER_HUB_USERNAME}/${PROJECT_NAME}:booking-service-${CI_COMMIT_SHA}
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=master
+      - POSTGRES_DB=reservations_db
+      - RABBIT_MQ_HOST=rabbitmq
+      - RABBIT_MQ_PORT=5672
+      - RABBIT_MQ_USER=guest
+      - RABBIT_MQ_PASSWORD=guest
+      - RABBIT_MQ_QUEUE_NAME=messagequeue
+      - RABBIT_MQ_EXCHANGE=messagequeue-exchange
+      - HOTEL_SERVICE_HOST=hotel-service
+      - HOTEL_SERVICE_PORT=8082
+      - PAYMENT_SERVICE_HOST=payment-service
+      - PAYMENT_SERVICE_PORT=8084
+      - LOYALTY_SERVICE_HOST=loyalty-service
+      - LOYALTY_SERVICE_PORT=8085
+    networks:
+      - betcon
+    ports:
+      - "8083:8083"
+    depends_on:
+      - database
+      - rabbitmq
+      - hotel-service
+      - payment-service
+      - loyalty-service
+      
+  payment-service: #6
+    image: ${DOCKER_HUB_USERNAME}/${PROJECT_NAME}:payment-service-${CI_COMMIT_SHA}
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=master
+      - POSTGRES_DB=payments_db
+    networks:
+      - betcon
+    ports:
+      - "8084:8084"
+    depends_on:
+      - database
+      
+  loyalty-service: #7
+    image: ${DOCKER_HUB_USERNAME}/${PROJECT_NAME}:loyalty-service-${CI_COMMIT_SHA}
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=master
+      - POSTGRES_DB=balances_db
+    networks:
+      - betcon
+    ports:
+      - "8085:8085"
+    depends_on:  
+      - database
+      
+  report-service: #8
+    image: ${DOCKER_HUB_USERNAME}/${PROJECT_NAME}:report-service-${CI_COMMIT_SHA}
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=master
+      - POSTGRES_DB=statistics_db
+      - RABBIT_MQ_HOST=rabbitmq
+      - RABBIT_MQ_PORT=5672
+      - RABBIT_MQ_USER=guest
+      - RABBIT_MQ_PASSWORD=guest
+      - RABBIT_MQ_QUEUE_NAME=messagequeue
+      - RABBIT_MQ_EXCHANGE=messagequeue-exchange
+    networks:
+      - betcon
+    ports:
+      - "8086:8086"
+    depends_on:
+      - database
+      - rabbitmq
+      
+  gateway-service: #9
+    image: ${DOCKER_HUB_USERNAME}/${PROJECT_NAME}:gateway-service-${CI_COMMIT_SHA}
+    environment:
+      - SESSION_SERVICE_HOST=session-service
+      - SESSION_SERVICE_PORT=8081
+      - HOTEL_SERVICE_HOST=hotel-service
+      - HOTEL_SERVICE_PORT=8082
+      - BOOKING_SERVICE_HOST=booking-service
+      - BOOKING_SERVICE_PORT=8083
+      - PAYMENT_SERVICE_HOST=payment-service
+      - PAYMENT_SERVICE_PORT=8084
+      - LOYALTY_SERVICE_HOST=loyalty-service
+      - LOYALTY_SERVICE_PORT=8085
+      - REPORT_SERVICE_HOST=report-service
+      - REPORT_SERVICE_PORT=8086
+    networks:
+      - betcon
+    ports:
+      - "8087:8087"
+    depends_on:
+      - session-service
+      - hotel-service
+      - booking-service
+      - payment-service
+      - loyalty-service
+      - report-service
+
+volumes:  
+  postgres_data:
+
+networks:
+  riddler7:
+    driver: bridge

@@ -1,0 +1,99 @@
+stages:
+  - build
+  - test
+  - staging
+  - prod
+
+variables:
+  DOCKER_HUB_USERNAME: "bettycon"
+  PROJECT_NAME: "online-boutique"
+
+.docker_build_template: &docker_build_template
+  image: docker:20.10.16
+  services:
+    - name: docker:20.10.16-dind
+      command: ["--tls=false"]
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+  before_script:
+    - echo "ZGNrcl9wYXRfbWlrWHBtY1dIdVJnaE5lTUg0SWZ3TFlVM21nCg==" | base64 -d | docker login -u "$DOCKER_HUB_USERNAME" --password-stdin
+
+build:
+  stage: build
+  timeout: 2 hours
+  <<: *docker_build_template
+  rules:
+    - if: $CI_COMMIT_BRANCH =~ /^feature_/
+      when: on_success
+    - if: $CI_COMMIT_BRANCH =~ /^feature_/
+      when: manual
+      allow_failure: true
+  script:
+    - cd src/app/src
+    - |
+      for service in frontend cartservice productcatalogservice currencyservice paymentservice; do
+        if [ -d "$service" ] && [ -f "$service/Dockerfile" ]; then
+          echo "=== Building $service ==="
+          docker build -t $DOCKER_HUB_USERNAME/$PROJECT_NAME:$service-$CI_COMMIT_SHA ./$service
+          docker push $DOCKER_HUB_USERNAME/$PROJECT_NAME:$service-$CI_COMMIT_SHA
+          echo "=== $service completed ==="
+        else
+          echo "=== Skipping $service - directory or Dockerfile not found ==="
+        fi
+      done
+  after_script:
+    - sleep 10
+
+test:
+  stage: test
+  needs: ["build"]
+  image: golang:1.22
+  rules:
+    - if: $CI_COMMIT_BRANCH =~ /^feature_/
+  script:
+    - cd src/app/src
+    - echo "Running unit tests for Go services"
+    - cd productcatalogservice && go test ./... && cd ..
+    - cd frontend && go test ./... && cd ..
+
+staging:
+  stage: staging
+  image: dtzar/helm-kubectl:latest
+  when: manual
+  only:
+    - tags
+  script:
+    - NAMESPACE="staging-$(echo "$CI_COMMIT_TAG" | sed 's/\\./-/g')"
+    - kubectl create namespace "$NAMESPACE" || true
+    - cd src/chart/online-boutique
+    - helm upgrade --install online-boutique-staging . \
+        --namespace "$NAMESPACE" \
+        --set image.repositoryPrefix="$DOCKER_HUB_USERNAME/$PROJECT_NAME:" \
+        --set image.tag="$CI_COMMIT_SHA" \
+        --set ingress.enabled=true \
+        --set ingress.host="staging-${CI_COMMIT_TAG}.online-boutique.local" \
+        --timeout 10m
+    - kubectl get pods -n "$NAMESPACE"
+    - kubectl get svc -n "$NAMESPACE"
+
+prod:
+  stage: prod
+  image: dtzar/helm-kubectl:latest
+  when: manual
+  only:
+    - tags
+  script:
+    - NAMESPACE="prod"
+    - kubectl create namespace "$NAMESPACE" || true
+    - cd src/chart/online-boutique
+    - helm upgrade --install online-boutique-prod . \
+        --namespace "$NAMESPACE" \
+        --set image.repositoryPrefix="$DOCKER_HUB_USERNAME/$PROJECT_NAME:" \
+        --set image.tag="$CI_COMMIT_SHA" \
+        --set ingress.enabled=true \
+        --set ingress.host="shop.online-boutique.local" \
+        --timeout 10m
+    - kubectl get pods -n "$NAMESPACE"
+    - kubectl get svc -n "$NAMESPACE"
+

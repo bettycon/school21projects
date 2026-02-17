@@ -1,0 +1,46 @@
+Thank you for installing {{ .Chart.Name }}.
+
+Your release is named {{ .Release.Name }}.
+
+To learn more about the release, try:
+
+  $ helm status {{ .Release.Name }}
+  $ helm get all {{ .Release.Name }}
+
+The following services have been deployed:
+
+{{- if .Values.hotel.enabled }}
+- Hotel Service: {{ .Release.Name }}-hotel-service:{{ .Values.hotel.service.port }}
+{{- end }}
+
+{{- if .Values.session.enabled }}
+- Session Service: {{ .Release.Name }}-session-service:{{ .Values.session.service.port }}
+{{- end }}
+
+{{- if .Values.booking.enabled }}
+- Booking Service: {{ .Release.Name }}-booking-service:{{ .Values.booking.service.port }}
+{{- end }}
+
+{{- if .Values.payment.enabled }}
+- Payment Service: {{ .Release.Name }}-payment-service:{{ .Values.payment.service.port }}
+{{- end }}
+
+{{- if .Values.loyalty.enabled }}
+- Loyalty Service: {{ .Release.Name }}-loyalty-service:{{ .Values.loyalty.service.port }}
+{{- end }}
+
+{{- if .Values.report.enabled }}
+- Report Service: {{ .Release.Name }}-report-service:{{ .Values.report.service.port }}
+{{- end }}
+
+{{- if .Values.gateway.enabled }}
+- Gateway Service (NodePort): {{ .Release.Name }}-gateway-service:{{ .Values.gateway.service.port }}
+{{- end }}
+
+{{- if .Values.session.enabled }}
+- Session Service (NodePort): {{ .Release.Name }}-session-service:{{ .Values.session.service.port }}
+{{- end }}
+
+Database: {{ .Release.Name }}-postgres-service:{{ .Values.database.service.port }}
+RabbitMQ: {{ .Release.Name }}-rabbitmq-service:{{ .Values.rabbitmq.service.amqpPort }}
+RabbitMQ Management: {{ .Release.Name }}-rabbitmq-service:{{ .Values.rabbitmq.service.managementPort }}

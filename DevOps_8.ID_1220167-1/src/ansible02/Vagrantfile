@@ -1,0 +1,49 @@
+Vagrant.configure("2") do |config|
+  # Consul Server
+  config.vm.define "consul_server" do |consul|
+    consul.vm.box = "ubuntu/focal64"
+    consul.vm.network "private_network", ip: "192.168.60.10"
+    # Прокинуть порт 8500 для доступа к UI Consul
+    consul.vm.network "forwarded_port", guest: 8500, host: 8500, auto_correct: true
+    consul.vm.hostname = "consul-server"
+    consul.vm.provider "virtualbox" do |vb|
+      vb.memory = "1024"
+      vb.cpus = 1
+    end
+  end
+
+  # API Machine
+  config.vm.define "api" do |api|
+    api.vm.box = "ubuntu/focal64"
+    api.vm.network "private_network", ip: "192.168.60.11"
+    # Прокинуть порт 8082 для доступа к API
+    api.vm.network "forwarded_port", guest: 8082, host: 8082, auto_correct: true
+    api.vm.hostname = "api"
+    api.vm.provider "virtualbox" do |vb|
+      vb.memory = "2048"
+      vb.cpus = 2
+    end
+  end
+
+  # Manager Machine
+  config.vm.define "manager" do |mgr|
+    mgr.vm.box = "ubuntu/focal64"
+    mgr.vm.network "private_network", ip: "192.168.60.12"
+    mgr.vm.hostname = "manager"
+    mgr.vm.provider "virtualbox" do |vb|
+      vb.memory = "1024"
+      vb.cpus = 1
+    end
+  end
+
+  # Database Machine
+  config.vm.define "db" do |db|
+    db.vm.box = "ubuntu/focal64"
+    db.vm.network "private_network", ip: "192.168.60.13"
+    db.vm.hostname = "db"
+    db.vm.provider "virtualbox" do |vb|
+      vb.memory = "1024"
+      vb.cpus = 1
+    end
+  end
+end

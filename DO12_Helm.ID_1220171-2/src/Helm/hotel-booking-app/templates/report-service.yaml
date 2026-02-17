@@ -1,0 +1,16 @@
+{{- if .Values.report.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-report-service
+  labels:
+    {{- include "hotel-booking-app.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.report.service.type }}
+  selector:
+    app: report-service
+  ports:
+  - port: {{ .Values.report.service.port }}
+    targetPort: {{ .Values.report.service.targetPort }}
+    protocol: TCP
+{{- end }}

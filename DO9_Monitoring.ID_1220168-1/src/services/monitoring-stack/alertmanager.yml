@@ -1,0 +1,25 @@
+global:
+  smtp_smarthost: 'smtp.gmail.com:587'
+  smtp_from: 'silverelder@gmail.com'
+  smtp_auth_username: 'silverelder@gmail.com'
+  smtp_auth_password: 'xkzw ogiq qhga'
+  smtp_require_tls: true
+
+route:
+  receiver: 'default-receiver'
+
+receivers:
+  - name: 'default-receiver'
+    email_configs:
+    - to: 'silverelder@gmail.com'
+      send_resolved: true
+    telegram_configs:
+    - api_url: https://api.telegram.org
+      bot_token: '8474997037:AAHpLMm6ZA6SfvyawAd2EZXYYGjJA'
+      chat_id: 5263588031
+      send_resolved: true
+      message: " 📌 ALERT!!!\n***********\n 📢 REASON: {{ .GroupLabels.alertname }}\n IMPORTANT: {{ .CommonLabels.severity }}\n {{ range .Alerts }}{{ .Annotations.summary }}\n{{ end }}" 
+        
+        
+        
+        

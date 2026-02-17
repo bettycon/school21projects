@@ -1,0 +1,27 @@
+# HELP system_cpu_load CPU load average (1 minute)
+# TYPE system_cpu_load gauge
+system_cpu_load 0.15
+
+# HELP system_memory_total Total memory in bytes
+# TYPE system_memory_total gauge
+system_memory_total 2067353600
+
+# HELP system_memory_available Available memory in bytes  
+# TYPE system_memory_available gauge
+system_memory_available 1600049152
+
+# HELP system_disk_total Total disk space in bytes
+# TYPE system_disk_total gauge
+system_disk_total 12040970240
+
+# HELP system_disk_used Used disk space in bytes
+# TYPE system_disk_used gauge
+system_disk_used 8724156416
+
+# HELP system_disk_available Available disk space in bytes
+# TYPE system_disk_available gauge
+system_disk_available 2682847232
+
+# HELP system_metrics_timestamp Unix timestamp of metrics collection
+# TYPE system_metrics_timestamp gauge
+system_metrics_timestamp 1755612298

@@ -1,0 +1,20 @@
+name: RPM Vagrant Development Build
+on:
+  push:
+    branches: 'dev-rpms-*'
+  workflow_dispatch:
+
+jobs:
+  trigger-build:
+    if: github.repository == 'hashicorp/vagrant'
+    name: Trigger Vagrant RPM Development Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Code Checkout
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      - name: Trigger Development Build
+        run: ./.ci/dev-build "${BRANCH}" "${COMMIT_ID}" build-rpms
+        env:
+          HASHIBOT_TOKEN: ${{ secrets.HASHIBOT_TOKEN }}
+          BRANCH: ${{ github.ref_name }}
+          COMMIT_ID: ${{ github.sha }}

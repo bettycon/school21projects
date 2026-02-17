@@ -1,0 +1,65 @@
+{{- if .Values.booking.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-booking-service
+  labels:
+    {{- include "hotel-booking-app.labels" . | nindent 4 }}
+    app: booking-service
+spec:
+  replicas: {{ .Values.booking.replicaCount }}
+  selector:
+    matchLabels:
+      app: booking-service
+  template:
+    metadata:
+      labels:
+        app: booking-service
+        {{- include "hotel-booking-app.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- if .Values.imagePullSecrets }}
+      imagePullSecrets:
+      {{- toYaml .Values.imagePullSecrets | nindent 6 }}
+      {{- end }}
+      containers:
+      - name: booking-service
+        image: "{{ .Values.booking.image.repository }}:{{ .Values.booking.image.tag }}"
+        imagePullPolicy: {{ .Values.booking.image.pullPolicy }}
+        ports:
+        - containerPort: {{ .Values.booking.service.port }}
+        env:
+        - name: SERVER_PORT
+          value: "{{ .Values.booking.service.port }}"
+        - name: SPRING_DATASOURCE_URL
+          value: "jdbc:postgresql://{{ .Release.Name }}-postgres-service:5432/hotel_db"
+        - name: SPRING_DATASOURCE_USERNAME
+          value: "postgres"
+        - name: SPRING_DATASOURCE_PASSWORD
+          value: "postgres"
+        - name: SPRING_RABBITMQ_HOST
+          value: "{{ .Release.Name }}-rabbitmq-service"
+        - name: SPRING_RABBITMQ_PORT
+          value: "5672"
+        - name: SPRING_RABBITMQ_USERNAME
+          value: "guest"
+        - name: SPRING_RABBITMQ_PASSWORD
+          value: "guest"
+        - name: RABBIT_MQ_QUEUE_NAME
+          value: "booking_queue"
+        - name: RABBIT_MQ_EXCHANGE
+          value: "booking_exchange"
+        - name: HOTEL_SERVICE_HOST
+          value: "{{ .Release.Name }}-hotel-service"
+        - name: HOTEL_SERVICE_PORT
+          value: "8082"
+        - name: PAYMENT_SERVICE_HOST
+          value: "{{ .Release.Name }}-payment-service"
+        - name: PAYMENT_SERVICE_PORT
+          value: "8084"
+        - name: LOYALTY_SERVICE_HOST
+          value: "{{ .Release.Name }}-loyalty-service"
+        - name: LOYALTY_SERVICE_PORT
+          value: "8085"
+        resources:
+          {}
+{{- end }}

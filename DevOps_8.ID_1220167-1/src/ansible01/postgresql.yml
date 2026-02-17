@@ -1,0 +1,74 @@
+---
+- name: Update apt package cache
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600
+
+- name: Install PostgreSQL
+  apt:
+    name:
+      - postgresql
+      - postgresql-contrib
+    state: present
+
+- name: Start and enable PostgreSQL
+  systemd:
+    name: postgresql
+    state: started
+    enabled: yes
+
+- name: Set postgres user password
+  become: yes
+  become_user: postgres
+  postgresql_user:
+    name: postgres
+    password: "postgres"
+
+- name: Create test database
+  become: yes
+  become_user: postgres
+  postgresql_db:
+    name: company_db
+    encoding: UTF8
+
+- name: Create hotel_bookings table
+  become: yes
+  become_user: postgres
+  postgresql_query:
+    db: company_db
+    query: |
+      CREATE TABLE IF NOT EXISTS hotel_bookings (
+        id SERIAL PRIMARY KEY,
+        guest_name VARCHAR(100) NOT NULL,
+        hotel_name VARCHAR(100),
+        room_number INTEGER,
+        check_in DATE,
+        check_out DATE,
+        total_price DECIMAL(10,2),
+        status VARCHAR(20)
+      );
+
+- name: Insert sample booking data
+  become: yes
+  become_user: postgres
+  postgresql_query:
+    db: company_db
+    query: |
+      INSERT INTO hotel_bookings (guest_name, hotel_name, room_number, check_in, check_out, total_price, status) VALUES
+      ('Иван Иванов', 'Grand Hotel', 101, '2024-01-15', '2024-01-20', 75000, 'confirmed'),
+      ('Петр Петров', 'Luxury Resort', 205, '2024-02-01', '2024-02-07', 120000, 'completed'),
+      ('Мария Сидорова', 'Business Inn', 308, '2024-03-10', '2024-03-12', 45000, 'pending')
+      ON CONFLICT (id) DO NOTHING;
+
+- name: Verify database content
+  become: yes
+  become_user: postgres
+  postgresql_query:
+    db: company_db
+    query: "SELECT * FROM hotel_bookings;"
+  register: db_result
+  changed_when: false
+
+- name: Display database content
+  debug:
+    var: db_result

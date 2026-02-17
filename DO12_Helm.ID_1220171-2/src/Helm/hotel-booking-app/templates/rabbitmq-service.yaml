@@ -1,0 +1,19 @@
+{{- if .Values.rabbitmq.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-rabbitmq-service
+  labels:
+    {{- include "hotel-booking-app.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.rabbitmq.service.type }}
+  selector:
+    app: rabbitmq
+  ports:
+  - port: {{ .Values.rabbitmq.service.amqpPort }}
+    targetPort: {{ .Values.rabbitmq.service.amqpPort }}
+    name: amqp
+  - port: {{ .Values.rabbitmq.service.managementPort }}
+    targetPort: {{ .Values.rabbitmq.service.managementPort }}
+    name: management
+{{- end }}

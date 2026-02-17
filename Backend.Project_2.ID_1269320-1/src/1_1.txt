@@ -1,0 +1,7 @@
+.\venv\Scripts\activate
+
+psql -U postgres -c "\l" # Проверка подключения к PostgreSQL
+python run.py
+
+http://localhost:8000/docs#/
+http://localhost:8000/redoc

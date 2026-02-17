@@ -1,0 +1,40 @@
+---
+- name: Install Consul Server
+  hosts: consul_server
+  become: yes
+  tags: install_consul_server
+  roles:
+    - install_consul_server
+
+- name: Install Consul Clients
+  hosts: consul_clients
+  become: yes
+  tags: install_consul_client
+  roles:
+    - install_consul_client
+
+- name: Install Database
+  hosts: db
+  become: yes
+  tags: install_db
+  roles:
+    - install_db
+
+- name: Install Hotels Service
+  hosts: api
+  become: yes
+  tags: install_hotels_service
+  roles:
+    - install_hotels_service
+
+- name: Display deployment summary
+  hosts: all
+  tags: always
+  tasks:
+    - name: Show deployment info
+      debug:
+        msg: |
+          Service Discovery deployment completed!
+          - Consul Server: http://192.168.60.10:8500
+          - API Service: http://192.168.60.11:8082
+          - Database: 192.168.60.13:5432

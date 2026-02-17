@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: loyalty-service
+  labels:
+    app: loyalty-service
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: loyalty-service
+  template:
+    metadata:
+      labels:
+        app: loyalty-service
+    spec:
+      containers:
+      - name: loyalty-service
+        image: bettycon/loyalty:3.0
+        ports:
+        - containerPort: 8085
+        env:
+        - name: SERVER_PORT
+          value: "8085"
+        - name: SPRING_DATASOURCE_URL
+          value: "jdbc:postgresql://postgres-service:5432/balances_db"
+        - name: SPRING_DATASOURCE_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: db-secret
+              key: POSTGRES_USER
+        - name: SPRING_DATASOURCE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: db-secret
+              key: POSTGRES_PASSWORD
+        - name: GATEWAY_SERVICE_UUID
+          valueFrom:
+            secretKeyRef:
+              name: auth-secrets
+              key: GATEWAY_SERVICE_UUID

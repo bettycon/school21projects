@@ -1,0 +1,16 @@
+{{- if .Values.loyalty.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-loyalty-service
+  labels:
+    {{- include "hotel-booking-app.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.loyalty.service.type }}
+  selector:
+    app: loyalty-service
+  ports:
+  - port: {{ .Values.loyalty.service.port }}
+    targetPort: {{ .Values.loyalty.service.targetPort }}
+    protocol: TCP
+{{- end }}

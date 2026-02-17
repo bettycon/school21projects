@@ -1,0 +1,245 @@
+{
+	"info": {
+		"_postman_id": "3ebd5cc5-8ba1-4c54-b33e-456d9f535f17",
+		"name": "News API Tasks",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "47500177",
+		"_collection_link": "https://bettycon-4912850.postman.co/workspace/bettycon's-Workspace~dbbcc434-78e3-4155-8b93-cdcef8d0950b/collection/47500177-3ebd5cc5-8ba1-4c54-b33e-456d9f535f17?action=share&source=collection_link&creator=47500177"
+	},
+	"item": [
+		{
+			"name": "Все новости по Linux",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{apiKey}}",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "https://newsapi.org/v2/everything?q=linux",
+					"protocol": "https",
+					"host": [
+						"newsapi",
+						"org"
+					],
+					"path": [
+						"v2",
+						"everything"
+					],
+					"query": [
+						{
+							"key": "q",
+							"value": "linux"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Новости по Разработке на русском (15 дней)",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"const today = new Date();\r",
+							"const fromDate = new Date();\r",
+							"fromDate.setDate(today.getDate() - 15);\r",
+							"\r",
+							"pm.collectionVariables.set(\"fromDate\", fromDate.toISOString().split('T')[0]);\r",
+							"pm.collectionVariables.set(\"toDate\", today.toISOString().split('T')[0]);"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{apiKey}}",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{baseUrl}}/everything?q=разработка&language=ru&from={{fromDate}}&to={{toDate}}",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"everything"
+					],
+					"query": [
+						{
+							"key": "q",
+							"value": "разработка"
+						},
+						{
+							"key": "language",
+							"value": "ru"
+						},
+						{
+							"key": "from",
+							"value": "{{fromDate}}"
+						},
+						{
+							"key": "to",
+							"value": "{{toDate}}"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Linux на русском (страница 3)",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{apiKey}}",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{baseUrl}}/everything?q=linux&language=ru&page=3&pageSize=10",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"everything"
+					],
+					"query": [
+						{
+							"key": "q",
+							"value": "linux"
+						},
+						{
+							"key": "language",
+							"value": "ru"
+						},
+						{
+							"key": "page",
+							"value": "3"
+						},
+						{
+							"key": "pageSize",
+							"value": "10"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Наука в России - заголовки",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{apiKey}}",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{baseUrl}}/everything?q=наука&language=ru",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"everything"
+					],
+					"query": [
+						{
+							"key": "q",
+							"value": "наука"
+						},
+						{
+							"key": "language",
+							"value": "ru"
+						}
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "https://newsapi.org/v2",
+			"type": "string",
+			"description": {
+				"content": "",
+				"type": "text/plain"
+			}
+		},
+		{
+			"key": "apiKey",
+			"value": "3ea946d564de4414b9b14d8c051fdd48",
+			"type": "string",
+			"description": {
+				"content": "",
+				"type": "text/plain"
+			}
+		},
+		{
+			"key": "fromDate",
+			"value": ""
+		},
+		{
+			"key": "toDate",
+			"value": ""
+		}
+	]
+}

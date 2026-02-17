@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>System Metrics Exporter</title>
+    <meta http-equiv="refresh" content="3">
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        pre { background: #f4f4f4; padding: 10px; border-radius: 5px; }
+        .metric { margin: 10px 0; padding: 10px; background: #f0f0f0; border-radius: 5px; }
+        .timestamp { color: #666; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+    <h1>System Metrics Exporter</h1>
+    <div class="timestamp">Last updated: Tue 19 Aug 2025 02:04:58 PM UTC</div>
+    
+    <div class="metric">
+        <strong>CPU Load (1min):</strong> 0.15
+    </div>
+    
+    <div class="metric">
+        <strong>Memory:</strong> Total: 1.9Gi, 
+        Available: 1.5Gi
+    </div>
+    
+    <div class="metric">
+        <strong>Disk (/):</strong> Total: 12G, 
+        Used: 8.2G, 
+        Available: 2.5G
+    </div>
+    
+    <h2>Raw Prometheus Metrics:</h2>
+    <pre># HELP system_cpu_load CPU load average (1 minute)
+# TYPE system_cpu_load gauge
+system_cpu_load 0.15
+
+# HELP system_memory_total Total memory in bytes
+# TYPE system_memory_total gauge
+system_memory_total 2067353600
+
+# HELP system_memory_available Available memory in bytes  
+# TYPE system_memory_available gauge
+system_memory_available 1600049152
+
+# HELP system_disk_total Total disk space in bytes
+# TYPE system_disk_total gauge
+system_disk_total 12040970240
+
+# HELP system_disk_used Used disk space in bytes
+# TYPE system_disk_used gauge
+system_disk_used 8724156416
+
+# HELP system_disk_available Available disk space in bytes
+# TYPE system_disk_available gauge
+system_disk_available 2682847232
+
+# HELP system_metrics_timestamp Unix timestamp of metrics collection
+# TYPE system_metrics_timestamp gauge
+system_metrics_timestamp 1755612298</pre>
+    
+    <p><a href="/metrics.prom">Direct link to metrics (for Prometheus)</a></p>
+</body>
+</html>

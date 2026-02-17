@@ -1,0 +1,283 @@
+{
+	"info": {
+		"_postman_id": "cf18a12d-fe84-415e-a49b-ca94940dc237",
+		"name": "Telegram Bot API",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "47500177",
+		"_collection_link": "https://bettycon-4912850.postman.co/workspace/bettycon's-Workspace~dbbcc434-78e3-4155-8b93-cdcef8d0950b/collection/47500177-cf18a12d-fe84-415e-a49b-ca94940dc237?action=share&source=collection_link&creator=47500177"
+	},
+	"item": [
+		{
+			"name": "getMe - информация о боте",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/bot{{botToken}}/getMe",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"bot{{botToken}}",
+						"getMe"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "sendMessage - отправка /start",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "text",
+							"value": "Привет от бота!",
+							"type": "text"
+						},
+						{
+							"key": "chat_id",
+							"value": "5263588031",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "{{baseUrl}}/bot{{botToken}}/sendMessage",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"bot{{botToken}}",
+						"sendMessage"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "getUpdates - получение chat_id",
+			"request": {
+				"method": "GET",
+				"header": []
+			},
+			"response": []
+		},
+		{
+			"name": "sendMessage - сообщение себе",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "chat_id",
+							"value": "5263588031",
+							"type": "text"
+						},
+						{
+							"key": "text",
+							"value": "Как дела?",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "{{baseUrl}}/bot{{botToken}}/sendMessage",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"bot{{botToken}}",
+						"sendMessage"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "sendPhoto - отправка фото",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "chat_id",
+							"value": "5263588031",
+							"type": "text"
+						},
+						{
+							"key": "caption",
+							"value": "Вот моё фото!",
+							"type": "text"
+						},
+						{
+							"key": "photo",
+							"type": "file",
+							"src": "postman-cloud:///1f088aac-dc93-49a0-8de8-ace761264663"
+						}
+					]
+				},
+				"url": {
+					"raw": "{{baseUrl}}/bot{{botToken}}/sendPhoto",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"bot{{botToken}}",
+						"sendPhoto"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "sendDocument - отправка PDF",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "chat_id",
+							"value": "5263588031",
+							"type": "text"
+						},
+						{
+							"key": "caption",
+							"value": "PDF документ",
+							"type": "text"
+						},
+						{
+							"key": "document",
+							"type": "file",
+							"src": "postman-cloud:///1f088aba-d56d-46e0-9f45-dbf40d43942b"
+						}
+					]
+				},
+				"url": {
+					"raw": "{{baseUrl}}/bot{{botToken}}/sendDocument",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"bot{{botToken}}",
+						"sendDocument"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "sendDocument - отправка DOCX",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "chat_id",
+							"value": "5263588031",
+							"type": "text"
+						},
+						{
+							"key": "caption",
+							"value": "Word документ",
+							"type": "text"
+						},
+						{
+							"key": "document",
+							"type": "file",
+							"src": "postman-cloud:///1f088aca-a806-48e0-9a80-916706a55e32"
+						}
+					]
+				},
+				"url": {
+					"raw": "{{baseUrl}}/bot{{botToken}}/sendDocument",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"bot{{botToken}}",
+						"sendDocument"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "getUserProfilePhotos - фото профиля",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/bot{{botToken}}/getUserProfilePhotos?user_id=5263588031",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"bot{{botToken}}",
+						"getUserProfilePhotos"
+					],
+					"query": [
+						{
+							"key": "user_id",
+							"value": "5263588031"
+						}
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "botToken",
+			"value": "8363504191:AAFdJzrAICXJjVEeoNQQJqZcRQIefxH4StY"
+		},
+		{
+			"key": "baseUrl",
+			"value": "https://api.telegram.org"
+		},
+		{
+			"key": "chat_id",
+			"value": "5263588031",
+			"type": "string"
+		},
+		{
+			"key": "user_id",
+			"value": "5263588031",
+			"type": "string"
+		}
+	]
+}

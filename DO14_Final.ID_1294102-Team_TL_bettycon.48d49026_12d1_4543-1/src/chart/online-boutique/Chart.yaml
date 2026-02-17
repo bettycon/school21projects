@@ -1,0 +1,7 @@
+apiVersion: v2
+name: online-boutique
+description: Helm chart for Google Online Boutique (subset of services)
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+

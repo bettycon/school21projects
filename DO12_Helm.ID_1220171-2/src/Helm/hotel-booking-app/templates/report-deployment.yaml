@@ -1,0 +1,53 @@
+{{- if .Values.report.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-report-service
+  labels:
+    {{- include "hotel-booking-app.labels" . | nindent 4 }}
+    app: report-service
+spec:
+  replicas: {{ .Values.report.replicaCount }}
+  selector:
+    matchLabels:
+      app: report-service
+  template:
+    metadata:
+      labels:
+        app: report-service
+        {{- include "hotel-booking-app.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- if .Values.imagePullSecrets }}
+      imagePullSecrets:
+      {{- toYaml .Values.imagePullSecrets | nindent 6 }}
+      {{- end }}
+      containers:
+      - name: report-service
+        image: "{{ .Values.report.image.repository }}:{{ .Values.report.image.tag }}"
+        imagePullPolicy: {{ .Values.report.image.pullPolicy }}
+        ports:
+        - containerPort: {{ .Values.report.service.port }}
+        env:
+        - name: SERVER_PORT
+          value: "{{ .Values.report.service.port }}"
+        - name: SPRING_DATASOURCE_URL
+          value: "jdbc:postgresql://{{ .Release.Name }}-postgres-service:5432/hotel_db"
+        - name: SPRING_DATASOURCE_USERNAME
+          value: "postgres"
+        - name: SPRING_DATASOURCE_PASSWORD
+          value: "postgres"
+        - name: SPRING_RABBITMQ_HOST
+          value: "{{ .Release.Name }}-rabbitmq-service"
+        - name: SPRING_RABBITMQ_PORT
+          value: "5672"
+        - name: SPRING_RABBITMQ_USERNAME
+          value: "guest"
+        - name: SPRING_RABBITMQ_PASSWORD
+          value: "guest"
+        - name: RABBIT_MQ_QUEUE_NAME
+          value: "booking_queue"
+        - name: RABBIT_MQ_EXCHANGE
+          value: "booking_exchange"
+        resources:
+          {}
+{{- end }}

@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>System Metrics</title>
+    <meta http-equiv="refresh" content="3">
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        pre { background: #f4f4f4; padding: 10px; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>System Metrics</h1>
+    <pre># HELP system_cpu_load CPU load average (1 minute)
+# TYPE system_cpu_load gauge
+system_cpu_load 0.01
+
+# HELP system_memory_total Total memory in bytes
+# TYPE system_memory_total gauge
+system_memory_total 2067353600
+
+# HELP system_memory_available Available memory in bytes
+# TYPE system_memory_available gauge
+system_memory_available 1639575552
+
+# HELP system_disk_total Total disk space in bytes
+# TYPE system_disk_total gauge
+system_disk_total 12040970240
+
+# HELP system_disk_used Used disk space in bytes
+# TYPE system_disk_used gauge
+system_disk_used 7266041856</pre>
+</body>
+</html>

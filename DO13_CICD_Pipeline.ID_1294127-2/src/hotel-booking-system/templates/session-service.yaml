@@ -1,0 +1,69 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: session-deployment
+  labels:
+    app: session
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: session
+  template:
+
+    metadata:
+      labels:
+        app: session
+    spec:
+      containers:
+
+      - name: session
+        image: "{{ .Values.sessionService.image.repository }}:{{ .Values.sessionService.image.tag }}"
+        env:
+        - name: POSTGRES_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: POSTGRES_HOST
+        - name: POSTGRES_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: POSTGRES_PORT
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: POSTGRES_USER
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: POSTGRES_PASSWORD
+        - name: POSTGRES_DB
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: POSTGRES_DB_USERS
+        volumeMounts:
+        - name: jwt-keys
+          mountPath: /app/config/jwt-keys.properties
+          subPath: jwt-keys.properties
+        ports:
+        - containerPort: 8081
+      volumes:
+      - name: jwt-keys
+        secret:
+          secretName: jwt-file-secret
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: session-service
+spec:
+  selector:
+    app: session
+  ports:
+  - port: 8081
+    targetPort: 8081 

@@ -1,0 +1,61 @@
+{{- if .Values.gateway.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-gateway-service
+  labels:
+    {{- include "hotel-booking-app.labels" . | nindent 4 }}
+    app: gateway-service
+spec:
+  replicas: {{ .Values.gateway.replicaCount }}
+  selector:
+    matchLabels:
+      app: gateway-service
+  template:
+    metadata:
+      labels:
+        app: gateway-service
+        {{- include "hotel-booking-app.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- if .Values.imagePullSecrets }}
+      imagePullSecrets:
+      {{- toYaml .Values.imagePullSecrets | nindent 6 }}
+      {{- end }}
+      containers:
+      - name: gateway-service
+        image: "{{ .Values.gateway.image.repository }}:{{ .Values.gateway.image.tag }}"
+        imagePullPolicy: {{ .Values.gateway.image.pullPolicy }}
+        ports:
+        - containerPort: {{ .Values.gateway.service.port }}
+        env:
+        - name: SERVER_PORT
+          value: "{{ .Values.gateway.service.port }}"
+        - name: SPRING_DATASOURCE_URL
+          value: "jdbc:postgresql://{{ .Release.Name }}-postgres-service:5432/hotel_db"
+        - name: SPRING_DATASOURCE_USERNAME
+          value: "postgres"
+        - name: SPRING_DATASOURCE_PASSWORD
+          value: "postgres"
+        - name: SESSION_SERVICE_HOST
+          value: "{{ .Release.Name }}-session-service"
+        - name: SESSION_SERVICE_PORT
+          value: "8081"
+        - name: HOTEL_SERVICE_HOST
+          value: "{{ .Release.Name }}-hotel-service"
+        - name: HOTEL_SERVICE_PORT
+          value: "8082"
+        - name: BOOKING_SERVICE_HOST
+          value: "{{ .Release.Name }}-booking-service"
+        - name: BOOKING_SERVICE_PORT
+          value: "8083"
+        - name: LOYALTY_SERVICE_HOST
+          value: "{{ .Release.Name }}-loyalty-service"
+        - name: LOYALTY_SERVICE_PORT
+          value: "8085"
+        - name: REPORT_SERVICE_HOST
+          value: "{{ .Release.Name }}-report-service"
+        - name: REPORT_SERVICE_PORT
+          value: "8086"
+        resources:
+          {}
+{{- end }}

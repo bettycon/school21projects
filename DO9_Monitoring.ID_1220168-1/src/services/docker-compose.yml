@@ -1,0 +1,193 @@
+version: '3.8'
+
+services:
+  rabbitmq:
+    image: bettycon/rabbit:3.0
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+      RABBITMQ_ENABLE_PROMETHEUS: "true"
+    ports:
+      - published: 5672
+        target: 5672
+        protocol: tcp
+        mode: host
+      - published: 15672
+        target: 15672
+        protocol: tcp
+        mode: host
+    networks:
+      - app-overlay
+    deploy:
+      replicas: 1
+      placement:
+        constraints: [node.hostname==manager01]
+
+  database:
+    image: bettycon/database:3.0
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: master
+      POSTGRES_DB: users_db
+    ports:
+      - published: 5432
+        target: 5432
+        protocol: tcp
+        mode: host
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-overlay
+    deploy:
+      replicas: 1
+      placement:
+        constraints: [node.hostname==manager01]
+      
+  session-service:
+    image: bettycon/session:3.0
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://database:5432/users_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: master
+      JAVA_TOOL_OPTIONS: -Xms256m -Xmx512m
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: health,info,prometheus,metrics
+    ports:
+      - published: 8081
+        target: 8081
+        protocol: tcp
+        mode: host
+    networks:
+      - app-overlay
+    deploy:
+      replicas: 1
+      placement:
+        constraints: [node.hostname==manager01]
+
+  hotel-service:
+    image: bettycon/hotel:3.0
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://database:5432/hotels_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: master
+      JAVA_TOOL_OPTIONS: -Xms256m -Xmx512m
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: health,info,prometheus,metrics
+    ports:
+      - published: 8082
+        target: 8082
+        protocol: tcp
+        mode: host
+    networks:
+      - app-overlay
+    deploy:
+      replicas: 1
+      placement:
+        constraints: [node.hostname==manager01]
+      
+  payment-service:
+    image: bettycon/payment:3.0
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://database:5432/payments_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: master
+      JAVA_TOOL_OPTIONS: -Xms256m -Xmx512m
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: health,info,prometheus,metrics
+    ports:
+      - published: 8084
+        target: 8084
+        protocol: tcp
+        mode: host
+    networks:
+      - app-overlay
+    deploy:
+      replicas: 1
+      placement:
+        constraints: [node.hostname==manager01]
+      
+  loyalty-service:
+    image: bettycon/loyalty:3.0
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://database:5432/balances_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: master
+      JAVA_TOOL_OPTIONS: -Xms256m -Xmx512m
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: health,info,prometheus,metrics
+    ports:
+      - published: 8085
+        target: 8085
+        protocol: tcp
+        mode: host
+    networks:
+      - app-overlay
+    deploy:
+      replicas: 1
+      placement:
+        constraints: [node.hostname==manager01]
+      
+  booking-service:
+    image: bettycon/booking:3.0
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://database:5432/reservations_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: master
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      JAVA_TOOL_OPTIONS: -Xms256m -Xmx512m
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: health,info,prometheus,metrics
+    ports:
+      - published: 8083
+        target: 8083
+        protocol: tcp
+        mode: host
+    networks:
+      - app-overlay
+    deploy:
+      replicas: 1
+      placement:
+        constraints: [node.hostname==manager01]
+      
+  report-service:
+    image: bettycon/report:3.0
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://database:5432/statistics_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: master
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      JAVA_TOOL_OPTIONS: -Xms256m -Xmx512m
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: health,info,prometheus,metrics
+    ports:
+      - published: 8086
+        target: 8086
+        protocol: tcp
+        mode: host
+    networks:
+      - app-overlay
+    deploy:
+      replicas: 1
+      placement:
+        constraints: [node.hostname==manager01]
+      
+  gateway-service:
+    image: bettycon/gateway:3.0
+    environment:
+      JAVA_TOOL_OPTIONS: -Xms256m -Xmx512m
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: health,info,prometheus,metrics
+    ports:
+      - published: 8087
+        target: 8087
+        protocol: tcp
+        mode: host
+    networks:
+      - app-overlay
+    deploy:
+      replicas: 1
+      placement:
+        constraints: [node.hostname==manager01]
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  app-overlay:
+    external: true

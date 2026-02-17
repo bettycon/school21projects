@@ -1,0 +1,83 @@
+---
+- name: Install PostgreSQL
+  apt:
+    name:
+      - postgresql
+      - postgresql-contrib
+    state: present
+    update_cache: yes
+
+- name: Start and enable PostgreSQL
+  systemd:
+    name: postgresql
+    state: started
+    enabled: yes
+
+- name: Wait for PostgreSQL to start
+  wait_for:
+    port: 5432
+    delay: 10
+    timeout: 30
+
+- name: Find PostgreSQL configuration directory
+  shell: |
+    find /etc/postgresql -name "postgresql.conf" | head -1
+  register: postgresql_conf_path
+  changed_when: false
+
+- name: Display PostgreSQL config path
+  debug:
+    var: postgresql_conf_path.stdout
+
+- name: Create PostgreSQL user using shell
+  shell: |
+    sudo -u postgres psql -c "CREATE USER hotel_user WITH PASSWORD 'hotel_password';" || echo "User already exists"
+  args:
+    executable: /bin/bash
+
+- name: Create hotels database
+  shell: |
+    sudo -u postgres createdb hotels_db || echo "Database already exists"
+  args:
+    executable: /bin/bash
+
+- name: Configure PostgreSQL for remote access
+  lineinfile:
+    path: "{{ postgresql_conf_path.stdout }}"
+    regexp: '^#?listen_addresses'
+    line: "listen_addresses = '*'"
+    backup: yes
+
+- name: Find PostgreSQL HBA configuration
+  shell: |
+    find /etc/postgresql -name "pg_hba.conf" | head -1
+  register: pg_hba_path
+  changed_when: false
+
+- name: Configure client authentication
+  lineinfile:
+    path: "{{ pg_hba_path.stdout }}"
+    line: "host    all             all             192.168.60.0/24         md5"
+
+- name: Restart PostgreSQL to apply changes
+  systemd:
+    name: postgresql
+    state: restarted
+
+- name: Wait for PostgreSQL to restart
+  wait_for:
+    port: 5432
+    delay: 5
+    timeout: 30
+
+- name: Verify database creation
+  shell: |
+    sudo -u postgres psql -l
+  args:
+    executable: /bin/bash
+  register: db_list
+  changed_when: false
+
+- name: Display database list
+  debug:
+    var: db_list.stdout

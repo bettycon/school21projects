@@ -1,0 +1,81 @@
+---
+- name: Install Docker and docker-compose
+  apt:
+    name:
+      - docker.io
+      - docker-compose
+    state: present
+    update_cache: yes
+
+- name: Start and enable Docker service
+  systemd:
+    name: docker
+    state: started
+    enabled: yes
+
+- name: Add vagrant user to docker group
+  user:
+    name: vagrant
+    groups: docker
+    append: yes
+
+- name: Create application directory
+  file:
+    path: /home/vagrant/app
+    state: directory
+    owner: vagrant
+    group: vagrant
+
+- name: Copy docker-compose.yml
+  copy:
+    src: /home/vagrant/ansible/files/docker-compose.yml
+    dest: /home/vagrant/app/docker-compose.yml
+    owner: vagrant
+    group: vagrant
+
+- name: Copy nginx configuration
+  copy:
+    src: /home/vagrant/ansible/files/nginx.conf
+    dest: /home/vagrant/app/nginx.conf
+    owner: vagrant
+    group: vagrant
+
+- name: Create nginx directory for volume mount
+  file:
+    path: /home/vagrant/app/nginx
+    state: directory
+    owner: vagrant
+    group: vagrant
+
+- name: Copy nginx.conf to correct docker path
+  copy:
+    src: /home/vagrant/ansible/files/nginx.conf
+    dest: /home/vagrant/app/nginx/nginx.conf
+    owner: vagrant
+    group: vagrant
+
+- name: Deploy application with docker-compose
+  shell: |
+    cd /home/vagrant/app
+    docker-compose up -d
+  environment:
+    HOME: /home/vagrant
+  async: 300
+  poll: 10
+
+- name: Wait for services to start
+  wait_for:
+    timeout: 300
+
+- name: Show running containers
+  shell: docker ps --format "table {{'{{'}}.Names{{'}}'}}\\t{{'{{'}}.Status{{'}}'}}"
+  register: docker_ps
+  changed_when: false
+
+- name: Display containers status
+  debug:
+    var: docker_ps.stdout
+
+- name: Verify application deployment
+  debug:
+    msg: "✅ Application deployed successfully with docker-compose on node01"

@@ -1,0 +1,37 @@
+---
+- name: Deploy Application to node01
+  hosts: application
+  become: yes
+  tasks:
+    - name: Include application tasks
+      include_role:
+        name: application
+        tasks_from: application.yml
+
+- name: Deploy Apache to node02
+  hosts: apache
+  become: yes
+  tasks:
+    - name: Include apache tasks
+      include_role:
+        name: apache
+        tasks_from: apache.yml
+
+- name: Deploy PostgreSQL to node02
+  hosts: postgres
+  become: yes
+  tasks:
+    - name: Include postgresql tasks
+      include_role:
+        name: postgres
+        tasks_from: postgresql.yml
+
+- name: Display deployment summary
+  hosts: all
+  tasks:
+    - name: Show deployment info
+      debug:
+        msg: |
+          Deployment completed!
+          - node01 (192.168.56.11): Application role - Microservices
+          - node02 (192.168.56.12): Apache + PostgreSQL roles

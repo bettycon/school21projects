@@ -1,0 +1,41 @@
+{{- if .Values.hotel.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-hotel-service
+  labels:
+    {{- include "hotel-booking-app.labels" . | nindent 4 }}
+    app: hotel-service
+spec:
+  replicas: {{ .Values.hotel.replicaCount }}
+  selector:
+    matchLabels:
+      app: hotel-service
+  template:
+    metadata:
+      labels:
+        app: hotel-service
+        {{- include "hotel-booking-app.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- if .Values.imagePullSecrets }}
+      imagePullSecrets:
+      {{- toYaml .Values.imagePullSecrets | nindent 6 }}
+      {{- end }}
+      containers:
+      - name: hotel-service
+        image: "{{ .Values.hotel.image.repository }}:{{ .Values.hotel.image.tag }}"
+        imagePullPolicy: {{ .Values.hotel.image.pullPolicy }}
+        ports:
+        - containerPort: {{ .Values.hotel.service.port }}
+        env:
+        - name: SERVER_PORT
+          value: "{{ .Values.hotel.service.port }}"
+        - name: SPRING_DATASOURCE_URL
+          value: "jdbc:postgresql://{{ .Release.Name }}-postgres-service:5432/hotel_db"
+        - name: SPRING_DATASOURCE_USERNAME
+          value: "postgres"
+        - name: SPRING_DATASOURCE_PASSWORD
+          value: "postgres"
+        resources:
+          {}
+{{- end }}

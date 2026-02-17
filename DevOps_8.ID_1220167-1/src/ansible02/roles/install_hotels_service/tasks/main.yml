@@ -1,0 +1,144 @@
+---
+- name: Install OpenJDK 8
+  apt:
+    name: openjdk-8-jdk
+    state: present
+    update_cache: yes
+
+- name: Install Maven
+  apt:
+    name: maven
+    state: present
+
+- name: Create application directory
+  file:
+    path: /opt/hotel-service
+    state: directory
+    owner: vagrant
+    group: vagrant
+    mode: '0755'
+
+- name: Copy application source code
+  copy:
+    src: ../../../../services/hotel-service/
+    dest: /opt/hotel-service
+    owner: vagrant
+    group: vagrant
+    mode: '0755'
+
+- name: Build application with Maven
+  command: mvn clean package -DskipTests
+  args:
+    chdir: /opt/hotel-service
+    creates: /opt/hotel-service/target/hotel-service-*.jar
+  become: yes
+  become_user: vagrant
+  environment:
+    JAVA_HOME: /usr/lib/jvm/java-8-openjdk-amd64
+
+- name: Find built JAR file
+  find:
+    paths: /opt/hotel-service/target
+    patterns: "hotel-service-*.jar"
+    file_type: file
+  register: jar_file
+
+- name: Display found JAR file
+  debug:
+    var: jar_file.files
+
+- name: Test database connection from api machine
+  shell: |
+    psql -h 192.168.60.13 -U hotel_user -d hotels_db -c "SELECT 1;" || echo "Database connection failed"
+  environment:
+    PGPASSWORD: hotel_password
+  register: db_test
+  changed_when: false
+
+- name: Display database test result
+  debug:
+    var: db_test.stdout
+
+- name: Create systemd service for hotel service
+  copy:
+    content: |
+      [Unit]
+      Description=Hotel Service
+      After=network.target
+
+      [Service]
+      Type=simple
+      User=vagrant
+      WorkingDirectory=/opt/hotel-service
+      Environment=POSTGRES_HOST=192.168.60.13
+      Environment=POSTGRES_PORT=5432
+      Environment=POSTGRES_DB=hotels_db
+      Environment=POSTGRES_USER=hotel_user
+      Environment=POSTGRES_PASSWORD=hotel_password
+      Environment=SPRING_JPA_DATABASE_PLATFORM=org.hibernate.dialect.PostgreSQLDialect
+      ExecStart=/usr/bin/java -jar /opt/hotel-service/target/{{ jar_file.files[0].path | basename }}
+      Restart=on-failure
+      RestartSec=10
+
+      [Install]
+      WantedBy=multi-user.target
+    dest: /etc/systemd/system/hotel-service.service
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Reload systemd daemon
+  systemd:
+    daemon_reload: yes
+
+- name: Stop existing hotel service
+  systemd:
+    name: hotel-service
+    state: stopped
+  ignore_errors: yes
+
+- name: Start and enable hotel service
+  systemd:
+    name: hotel-service
+    state: started
+    enabled: yes
+
+- name: Wait a bit for service to initialize
+  pause:
+    seconds: 30
+
+- name: Check service status
+  systemd:
+    name: hotel-service
+  register: service_status
+
+- name: Display service status
+  debug:
+    var: service_status
+
+- name: Check application logs
+  shell: journalctl -u hotel-service -n 30 --no-pager
+  register: service_logs
+  changed_when: false
+
+- name: Display service logs
+  debug:
+    var: service_logs.stdout
+
+- name: Check if service is listening on port
+  wait_for:
+    port: 8082
+    delay: 10
+    timeout: 60
+  ignore_errors: yes
+
+- name: Test service health endpoint
+  uri:
+    url: http://localhost:8082/actuator/health
+    method: GET
+  register: health_check
+  ignore_errors: yes
+
+- name: Display health check result
+  debug:
+    var: health_check.status

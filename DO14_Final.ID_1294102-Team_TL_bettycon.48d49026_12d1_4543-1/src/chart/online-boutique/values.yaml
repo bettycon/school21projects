@@ -1,0 +1,33 @@
+replicaCount: 1
+
+image:
+  repositoryPrefix: ""
+  tag: "latest"
+  pullPolicy: IfNotPresent
+
+frontend:
+  enabled: true
+
+productcatalogservice:
+  enabled: true
+
+cartservice:
+  enabled: true
+
+currencyservice:
+  enabled: true
+
+paymentservice:
+  enabled: true
+
+redis:
+  enabled: true
+  image: redis:alpine
+  persistence:
+    enabled: false
+
+ingress:
+  enabled: false
+  className: nginx
+  host: "online-boutique.local"
+

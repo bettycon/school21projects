@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+data:
+  # PostgreSQL
+  POSTGRES_HOST: {{ .Values.global.database.host | quote }}
+  POSTGRES_PORT: {{ .Values.global.database.port | quote }}
+  
+  # RabbitMQ
+  RABBIT_MQ_HOST: {{ .Values.global.rabbitmq.host | quote }}
+  RABBIT_MQ_PORT: {{ .Values.global.rabbitmq.port | quote }}
+  RABBIT_MQ_QUEUE_NAME: {{ .Values.rabbitmqConfig.queueName | quote }}
+  RABBIT_MQ_EXCHANGE: {{ .Values.rabbitmqConfig.exchange | quote }}
+
+  # Data Base
+  POSTGRES_DB_USERS: {{ .Values.databases.users | quote }}
+  POSTGRES_DB_HOTELS: {{ .Values.databases.hotels | quote }}
+  POSTGRES_DB_PAYMENTS: {{ .Values.databases.payments | quote }}
+  POSTGRES_DB_BALANCES: {{ .Values.databases.balances | quote }}
+  POSTGRES_DB_STATISTICS: {{ .Values.databases.statistics | quote }}
+  POSTGRES_DB_RESERVATIONS: {{ .Values.databases.reservations | quote }}
+
+  # services
+  SESSION_SERVICE_HOST: {{ .Values.global.services.session.host | quote }}
+  SESSION_SERVICE_PORT: {{ .Values.global.services.session.port | quote }}
+  HOTEL_SERVICE_HOST: {{ .Values.global.services.hotel.host | quote }}
+  HOTEL_SERVICE_PORT: {{ .Values.global.services.hotel.port | quote }}
+  BOOKING_SERVICE_HOST: {{ .Values.global.services.booking.host | quote }}
+  BOOKING_SERVICE_PORT: {{ .Values.global.services.booking.port | quote }}
+  PAYMENT_SERVICE_HOST: {{ .Values.global.services.payment.host | quote }}
+  PAYMENT_SERVICE_PORT: {{ .Values.global.services.payment.port | quote }}
+  LOYALTY_SERVICE_HOST: {{ .Values.global.services.loyalty.host | quote }}
+  LOYALTY_SERVICE_PORT: {{ .Values.global.services.loyalty.port | quote }}
+  REPORT_SERVICE_HOST: {{ .Values.global.services.report.host | quote }}
+  REPORT_SERVICE_PORT: {{ .Values.global.services.report.port | quote }}
+

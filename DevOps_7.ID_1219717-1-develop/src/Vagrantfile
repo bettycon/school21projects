@@ -1,0 +1,57 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure("2") do |config|
+  # Общие настройки для всех машин
+  config.vm.box = "ubuntu/jammy64"
+  
+  # Настройка менеджера
+  config.vm.define "manager01" do |manager|
+    manager.vm.hostname = "manager01"
+    manager.vm.network "private_network", ip: "192.168.56.10"
+    
+    manager.vm.provider "virtualbox" do |vb|
+      vb.name = "swarm-manager01"
+      vb.memory = "1024"
+      vb.cpus = 1
+    end
+    
+    # Синхронизация папки со скриптами
+    manager.vm.synced_folder ".", "/home/vagrant/app"
+    
+    # Провижининг для менеджера
+    manager.vm.provision "shell", path: "scripts/install-docker.sh"
+    manager.vm.provision "shell", path: "scripts/init-swarm.sh", run: "always"
+  end
+
+  # Настройка воркеров
+  config.vm.define "worker01" do |worker|
+    worker.vm.hostname = "worker01"
+    worker.vm.network "private_network", ip: "192.168.56.11"
+    
+    worker.vm.provider "virtualbox" do |vb|
+      vb.name = "swarm-worker01"
+      vb.memory = "1024"
+      vb.cpus = 1
+    end
+    
+    worker.vm.synced_folder ".", "/home/vagrant/app"
+    worker.vm.provision "shell", path: "scripts/install-docker.sh"
+    worker.vm.provision "shell", path: "scripts/join-worker.sh", run: "always"
+  end
+
+  config.vm.define "worker02" do |worker|
+    worker.vm.hostname = "worker02"
+    worker.vm.network "private_network", ip: "192.168.56.12"
+    
+    worker.vm.provider "virtualbox" do |vb|
+      vb.name = "swarm-worker02"
+      vb.memory = "1024"
+      vb.cpus = 1
+    end
+    
+    worker.vm.synced_folder ".", "/home/vagrant/app"
+    worker.vm.provision "shell", path: "scripts/install-docker.sh"
+    worker.vm.provision "shell", path: "scripts/join-worker.sh", run: "always"
+  end
+end

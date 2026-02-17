@@ -1,0 +1,351 @@
+# Global values for all services
+global:
+  # Image pull policy for all containers
+  imagePullPolicy: IfNotPresent
+  
+  # Common labels to add to all deployed objects
+  labels: {}
+  
+  # Common annotations to add to all deployed objects
+  annotations: {}
+  
+  # Common environment variables for all services
+  env: {}
+
+# ConfigMap configuration
+configmap:
+  enabled: true
+  name: app-config
+  data:
+    # Database configuration
+    POSTGRES_HOST: "postgres-service"
+    POSTGRES_PORT: "5432"
+    
+    # RabbitMQ configuration
+    RABBIT_MQ_HOST: "rabbitmq-service"
+    RABBIT_MQ_PORT: "5672"
+    RABBIT_MQ_USER: "guest"
+    RABBIT_MQ_PASSWORD: "guest"
+    RABBIT_MQ_EXCHANGE: "booking.exchange"
+    RABBIT_MQ_QUEUE_NAME: "booking.queue"
+    RABBIT_MQ_ROUTING_KEY: "booking.key"
+    
+    # Service hosts and ports
+    SESSION_SERVICE_HOST: "session-service"
+    SESSION_SERVICE_PORT: "8081"
+    HOTEL_SERVICE_HOST: "hotel-service"
+    HOTEL_SERVICE_PORT: "8082"
+    BOOKING_SERVICE_HOST: "booking-service"
+    BOOKING_SERVICE_PORT: "8083"
+    PAYMENT_SERVICE_HOST: "payment-service"
+    PAYMENT_SERVICE_PORT: "8084"
+    LOYALTY_SERVICE_HOST: "loyalty-service"
+    LOYALTY_SERVICE_PORT: "8085"
+    REPORT_SERVICE_HOST: "report-service"
+    REPORT_SERVICE_PORT: "8086"
+    GATEWAY_SERVICE_HOST: "gateway-service"
+    GATEWAY_SERVICE_PORT: "8087"
+    
+    # Service ports (for internal use)
+    SESSION_PORT: "8081"
+    HOTEL_PORT: "8082"
+    BOOKING_PORT: "8083"
+    PAYMENT_PORT: "8084"
+    LOYALTY_PORT: "8085"
+    REPORT_PORT: "8086"
+    GATEWAY_PORT: "8087"
+
+# Secrets configuration
+secrets:
+  enabled: true
+  dbSecret:
+    name: db-secret
+    data:
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "master"
+  rabbitmqSecret:
+    name: rabbitmq-secret
+    data:
+      RABBIT_MQ_PASSWORD: "guest"
+  authSecrets:
+    name: auth-secrets
+    data:
+      GATEWAY_SERVICE_UUID: "b51ceda2-bfa5-11eb-8529-0242ac130003"
+      BOOKING_SERVICE_UUID: "911ccb4c-c055-11eb-8529-0242ac130003"
+
+# Hotel Service configuration
+hotel:
+  enabled: true
+  replicaCount: 2
+  strategy:
+    type: Recreate
+  image:
+    repository: bettycon/hotel
+    tag: "3.0"
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 8082
+    targetPort: 8082
+  env:
+    SERVER_PORT: "8082"
+    SPRING_DATASOURCE_URL: "jdbc:postgresql://postgres-service:5432/hotels_db"
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+# Payment Service configuration
+payment:
+  enabled: true
+  replicaCount: 1
+  strategy:
+    type: Recreate
+  image:
+    repository: bettycon/payment
+    tag: "3.0"
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 8084
+    targetPort: 8084
+  env:
+    SERVER_PORT: "8084"
+    SPRING_DATASOURCE_URL: "jdbc:postgresql://postgres-service:5432/payments_db"
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+# Gateway Service configuration
+gateway:
+  enabled: true
+  replicaCount: 1
+  strategy:
+    type: Recreate
+  image:
+    repository: bettycon/gateway
+    tag: "3.0"
+    pullPolicy: IfNotPresent
+  service:
+    type: NodePort
+    port: 8087
+    targetPort: 8087
+    nodePort: 30087
+  env:
+    SERVER_PORT: "8087"
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+# Report Service configuration
+report:
+  enabled: true
+  replicaCount: 1
+  strategy:
+    type: Recreate
+  image:
+    repository: bettycon/report
+    tag: "3.0"
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 8086
+    targetPort: 8086
+  env:
+    SERVER_PORT: "8086"
+    SPRING_DATASOURCE_URL: "jdbc:postgresql://postgres-service:5432/statistics_db"
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+# Database (PostgreSQL) configuration
+database:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: bettycon/database
+    tag: "3.0"
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 5432
+    targetPort: 5432
+  env:
+    POSTGRES_DB: "users_db"
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  persistence:
+    enabled: false
+    size: 8Gi
+
+# Session Service configuration
+session:
+  enabled: true
+  replicaCount: 1
+  strategy:
+    type: Recreate
+  image:
+    repository: bettycon/session
+    tag: "3.0"
+    pullPolicy: IfNotPresent
+  service:
+    type: NodePort
+    port: 8081
+    targetPort: 8081
+    nodePort: 30081
+  env:
+    SERVER_PORT: "8081"
+    SPRING_DATASOURCE_URL: "jdbc:postgresql://postgres-service:5432/users_db"
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+# Booking Service configuration
+booking:
+  enabled: true
+  replicaCount: 1
+  strategy:
+    type: Recreate
+  image:
+    repository: bettycon/booking
+    tag: "3.0"
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 8083
+    targetPort: 8083
+  env:
+    SERVER_PORT: "8083"
+    SPRING_DATASOURCE_URL: "jdbc:postgresql://postgres-service:5432/reservations_db"
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+# Loyalty Service configuration
+loyalty:
+  enabled: true
+  replicaCount: 1
+  strategy:
+    type: Recreate
+  image:
+    repository: bettycon/loyalty
+    tag: "3.0"
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 8085
+    targetPort: 8085
+  env:
+    SERVER_PORT: "8085"
+    SPRING_DATASOURCE_URL: "jdbc:postgresql://postgres-service:5432/balances_db"
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+# RabbitMQ configuration
+rabbitmq:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: bettycon/rabbit
+    tag: "3.0"
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    amqpPort: 5672
+    managementPort: 15672
+  env:
+    RABBITMQ_DEFAULT_USER: "guest"
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+# Ingress configuration (optional)
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: hotel.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+# Resource defaults for all services (can be overridden per service)
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+# Pod security context
+podSecurityContext:
+  fsGroup: 2000
+  runAsNonRoot: true
+  runAsUser: 1000
+
+# Container security context
+securityContext:
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 1000
+
+# Affinity rules for pod scheduling
+affinity: {}
+
+# Node selector for pod placement
+nodeSelector: {}
+
+# Tolerations for pod placement
+tolerations: []
+
+# Image pull secrets (for private registries)
+imagePullSecrets: []
+
+# Service account configuration
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}

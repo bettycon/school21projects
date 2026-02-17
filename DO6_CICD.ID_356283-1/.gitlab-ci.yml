@@ -1,0 +1,50 @@
+stages:
+  - build
+  - style
+  - test
+  - deploy
+
+build_app:
+  stage: build
+  tags: [build]
+  script:
+    - cd code-samples && make
+  after_script:
+    - bash src/telegram.sh
+  artifacts:
+    paths: [code-samples/DO]
+    expire_in: 30 days
+
+check_style:
+  stage: style
+  tags: [style]
+  script:
+    - cd code-samples
+    - cp main.c main.c.backup
+    - clang-format --style=Google -i main.c
+    - diff -u main.c.backup main.c || exit 1
+    - mv main.c.backup main.c
+  after_script:
+    - bash src/telegram.sh
+
+integration_tests:
+  stage: test
+  tags: [test]
+  script:
+    - chmod +x src/test_integration.sh
+    - cd src && ./test_integration.sh
+  after_script:
+    - bash src/telegram.sh
+  needs: [build_app, check_style]
+
+deploy_to_server:
+  stage: deploy
+  tags: [deploy]
+  script:
+    - chmod +x src/deploy.sh
+    - cd src && ./deploy.sh
+  after_script:
+    - bash src/telegram.sh
+  needs: [build_app, check_style, integration_tests]
+  when: manual
+  allow_failure: false

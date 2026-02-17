@@ -1,0 +1,49 @@
+---
+- name: Install Apache
+  apt:
+    name: apache2
+    state: present
+    update_cache: yes
+
+- name: Start and enable Apache
+  systemd:
+    name: apache2
+    state: started
+    enabled: yes
+
+- name: Create custom index.html
+  copy:
+    content: |
+      <!DOCTYPE html>
+      <html>
+      <head>
+          <title>Apache Test Page - Node02</title>
+          <style>
+              body { font-family: Arial, sans-serif; margin: 40px; }
+              h1 { color: #2c3e50; }
+              .info { background: #f8f9fa; padding: 20px; border-radius: 5px; }
+          </style>
+      </head>
+      <body>
+          <h1>🚀 Apache Server is Working!</h1>
+          <div class="info">
+              <p>This is a test page deployed by Ansible role.</p>
+              <p><strong>Server:</strong> {{ ansible_hostname }}</p>
+              <p><strong>IP Address:</strong> {{ ansible_default_ipv4.address }}</p>
+              <p><strong>Role:</strong> Apache Web Server</p>
+          </div>
+      </body>
+      </html>
+    dest: /var/www/html/index.html
+    owner: www-data
+    group: www-data
+    mode: '0644'
+
+- name: Show Apache status
+  shell: systemctl status apache2
+  register: apache_status
+  changed_when: false
+
+- name: Display Apache status
+  debug:
+    var: apache_status.stdout
