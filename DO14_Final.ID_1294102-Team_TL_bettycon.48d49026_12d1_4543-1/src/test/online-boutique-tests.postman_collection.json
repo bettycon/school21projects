@@ -1,0 +1,149 @@
+{
+	"info": {
+		"_postman_id": "online-boutique-final",
+		"name": "Online Boutique - Final Tests",
+		"description": "Correct test suite for Online Boutique microservices",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Health Check - Home Page",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Home page loads successfully\", function() {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://{{FRONTEND_HOST}}:{{FRONTEND_PORT}}/",
+					"protocol": "http",
+					"host": ["{{FRONTEND_HOST}}"],
+					"port": "{{FRONTEND_PORT}}",
+					"path": [""]
+				}
+			}
+		},
+		{
+			"name": "View Product Page",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Product page loads successfully\", function() {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://{{FRONTEND_HOST}}:{{FRONTEND_PORT}}/product/{{PRODUCT_ID}}",
+					"protocol": "http",
+					"host": ["{{FRONTEND_HOST}}"],
+					"port": "{{FRONTEND_PORT}}",
+					"path": ["product", "{{PRODUCT_ID}}"]
+				}
+			}
+		},
+		{
+			"name": "Change Currency",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Currency change successful\", function() {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/x-www-form-urlencoded"
+					}
+				],
+				"body": {
+					"mode": "urlencoded",
+					"urlencoded": [
+						{
+							"key": "currency_code",
+							"value": "EUR"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://{{FRONTEND_HOST}}:{{FRONTEND_PORT}}/setCurrency",
+					"protocol": "http",
+					"host": ["{{FRONTEND_HOST}}"],
+					"port": "{{FRONTEND_PORT}}",
+					"path": ["setCurrency"]
+				}
+			}
+		},
+		{
+			"name": "Logout",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Logout successful\", function() {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://{{FRONTEND_HOST}}:{{FRONTEND_PORT}}/logout",
+					"protocol": "http",
+					"host": ["{{FRONTEND_HOST}}"],
+					"port": "{{FRONTEND_PORT}}",
+					"path": ["logout"]
+				}
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "FRONTEND_HOST",
+			"value": "frontend",
+			"type": "default"
+		},
+		{
+			"key": "FRONTEND_PORT",
+			"value": "80",
+			"type": "default"
+		},
+		{
+			"key": "PRODUCT_ID",
+			"value": "OLJCESPC7Z",
+			"type": "default"
+		}
+	]
+}

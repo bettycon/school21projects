@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM --platform=$BUILDPLATFORM python:3.14.2-alpine@sha256:31da4cb527055e4e3d7e9e006dffe9329f84ebea79eaca0a1f1c27ce61e40ca5 AS base
+FROM --platform=linux/amd64 python:3.14.2-alpine AS base
 
 FROM base AS builder
 
@@ -49,3 +49,4 @@ COPY . .
 
 EXPOSE 8080
 ENTRYPOINT [ "python", "email_server.py" ]
+

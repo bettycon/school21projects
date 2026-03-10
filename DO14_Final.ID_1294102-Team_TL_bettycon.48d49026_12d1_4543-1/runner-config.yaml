@@ -1,0 +1,126 @@
+apiVersion: v1
+data:
+  check-live: |
+    #!/bin/bash
+    set -eou pipefail
+
+    VERIFY_TIMEOUT=${1:-${VERIFY_TIMEOUT:-3}}
+
+    if ! /usr/bin/pgrep -f ".*register-the-runner"  > /dev/null && ! /usr/bin/pgrep -f "gitlab.*runner"  > /dev/null ; then
+      exit 1
+    fi
+
+    status=0
+    verify_output=$(timeout "${VERIFY_TIMEOUT}" gitlab-runner verify --url= 2>&1) || status=$?
+
+    if (( status == 143 )) || (( status == 124 )) ; then
+      echo "'gitlab-runner verify' terminated by timeout, not a conclusive failure" >&2
+      exit 0
+    elif (( status > 0 )) ; then
+      exit ${status}
+    fi
+
+    grep -qE "is (alive|valid)" <<<"${verify_output}"
+  config.template.toml: "[[runners]]\n  name = \"kubernetes-runner2\"\n  url = \"https://git.21-school.ru/\"\n
+    \ token = \"\"\n  executor = \"kubernetes\"\n  tags = \"kubernetes,docker\"\n
+    \ runUntagged = true\n  request_concurrency = 2\n  output_limit = 4096\n  [runners.kubernetes]\n
+    \   namespace = \"gitlab-runner\"\n    image = \"docker:stable\"\n    privileged
+    = true\n    memory_limit = \"6Gi\"\n    cpu_limit = \"2\"\n    memory_request
+    = \"4Gi\"\n    cpu_request = \"1\"\n    service_memory_limit = \"4Gi\"\n    service_memory_request
+    = \"3Gi\"\n    service_cpu_limit = \"2\"\n    service_cpu_request = \"1\"\n    helper_memory_limit
+    = \"512Mi\"\n    helper_memory_request = \"256Mi\"\n    helper_cpu_limit = \"500m\"\n
+    \   helper_cpu_request = \"200m\"\n    service_account = \"gitlab-runner\"\n    [[runners.kubernetes.volumes.empty_dir]]\n
+    \     name = \"docker-certs\"\n      mount_path = \"/certs/client\"\n      medium
+    = \"Memory\"\n      \n"
+  config.toml: "concurrent = 10\ncheck_interval = 3\nlog_level = \"info\"\nshutdown_timeout
+    = 0\n\n[session_server]\n  session_timeout = 1800\n\n[[runners]]\n  name = \"kubernetes-runner\"\n
+    \ url = \"https://git.21-school.ru/\"\n  token = \"GR1348941mp5qGse_ARR7kBmy9M8Z\"\n
+    \ executor = \"kubernetes\"\n  tags = \"kubernetes,docker\"\n  runUntagged = true\n
+    \ request_concurrency = 2\n  output_limit = 4096\n  \n  [runners.kubernetes]\n
+    \   namespace = \"gitlab-runner\"\n    image = \"docker:stable\"\n    privileged
+    = true\n    service_account = \"gitlab-runner\"\n    \n    [runners.kubernetes.resources]\n
+    \     requests = { cpu = \"1\", memory = \"4Gi\" }\n      limits = { cpu = \"2\",
+    memory = \"6Gi\" }\n    \n    [runners.kubernetes.service_resources]\n      requests
+    = { cpu = \"1\", memory = \"3Gi\" }\n      limits = { cpu = \"2\", memory = \"4Gi\"
+    }\n    \n    [runners.kubernetes.helper_resources]\n      requests = { cpu = \"200m\",
+    memory = \"256Mi\" }\n      limits = { cpu = \"500m\", memory = \"512Mi\" }\n
+    \   \n    [[runners.kubernetes.volumes.empty_dir]]\n      name = \"docker-certs\"\n
+    \     mount_path = \"/certs/client\"\n      medium = \"Memory\"\n"
+  entrypoint: "#!/bin/bash\nset -e\n\nexport CONFIG_PATH_FOR_INIT=\"/home/gitlab-runner/.gitlab-runner/\"\nmkdir
+    -p ${CONFIG_PATH_FOR_INIT}\ncp /configmaps/config.toml ${CONFIG_PATH_FOR_INIT}\n\nif
+    [[ -f /secrets/accesskey && -f /secrets/secretkey ]]; then\n  export CACHE_S3_ACCESS_KEY=$(cat
+    /secrets/accesskey)\n  export CACHE_S3_SECRET_KEY=$(cat /secrets/secretkey)\nfi\n\nif
+    [[ -f /secrets/gcs-applicaton-credentials-file ]]; then\n  export GOOGLE_APPLICATION_CREDENTIALS=\"/secrets/gcs-applicaton-credentials-file\"\nelif
+    [[ -f /secrets/gcs-application-credentials-file ]]; then\n  export GOOGLE_APPLICATION_CREDENTIALS=\"/secrets/gcs-application-credentials-file\"\nelse\n
+    \ if [[ -f /secrets/gcs-access-id && -f /secrets/gcs-private-key ]]; then\n    export
+    CACHE_GCS_ACCESS_ID=$(cat /secrets/gcs-access-id)\n    export CACHE_GCS_PRIVATE_KEY=$(echo
+    -e $(cat /secrets/gcs-private-key))\n  fi\nfi\n\nif [[ -f /secrets/azure-account-name
+    && -f /secrets/azure-account-key ]]; then\n  export CACHE_AZURE_ACCOUNT_NAME=$(cat
+    /secrets/azure-account-name)\n  export CACHE_AZURE_ACCOUNT_KEY=$(cat /secrets/azure-account-key)\nfi\n\nif
+    [[ -f /secrets/runner-registration-token ]]; then\n  export REGISTRATION_TOKEN=$(cat
+    /secrets/runner-registration-token)\nfi\n\nif [[ -f /secrets/runner-token ]];
+    then\n  export CI_SERVER_TOKEN=$(cat /secrets/runner-token)\nfi\n\nif ! sh /configmaps/register-the-runner;
+    then\n  exit 1\nfi\n\nif ! bash /configmaps/pre-entrypoint-script; then\n  exit
+    1\nfi\n\nexec /entrypoint run \\\n  --working-directory=/home/gitlab-runner\n
+    \ \n"
+  pre-entrypoint-script: ""
+  register-the-runner: |
+    #!/bin/sh
+    signal_handler() {
+      if [ ! -d "/proc/$register_pid" ]; then
+        wait $register_pid
+      fi
+      exit
+    }
+    trap 'signal_handler' QUIT INT
+
+    MAX_REGISTER_ATTEMPTS=30
+
+    RUN_UNTAGGED=""
+    ACCESS_LEVEL=""
+
+    if [ -n "$CI_SERVER_TOKEN" ] && [ "${CI_SERVER_TOKEN#glrt-}" != "$CI_SERVER_TOKEN" ]; then
+      RUN_UNTAGGED=""
+      ACCESS_LEVEL=""
+      unset REGISTER_LOCKED
+      unset RUNNER_TAG_LIST
+    fi
+
+    for i in $(seq 1 "${MAX_REGISTER_ATTEMPTS}"); do
+      echo "Registration attempt ${i} of ${MAX_REGISTER_ATTEMPTS}"
+      /entrypoint register \
+        ${RUN_UNTAGGED} \
+        ${ACCESS_LEVEL} \
+        --template-config /configmaps/config.template.toml \
+        --non-interactive &
+
+      register_pid=$!
+      wait $register_pid
+      retval=$?
+
+      if [ ${retval} = 0 ]; then
+        break
+      elif [ ${i} = ${MAX_REGISTER_ATTEMPTS} ]; then
+        exit 1
+      fi
+
+      sleep 5
+    done
+kind: ConfigMap
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"v1","data":{"check-live":"#!/bin/bash\nset -eou pipefail\n\nVERIFY_TIMEOUT=${1:-${VERIFY_TIMEOUT:-3}}\n\nif ! /usr/bin/pgrep -f \".*register-the-runner\"  \u003e /dev/null \u0026\u0026 ! /usr/bin/pgrep -f \"gitlab.*runner\"  \u003e /dev/null ; then\n  exit 1\nfi\n\nstatus=0\nverify_output=$(timeout \"${VERIFY_TIMEOUT}\" gitlab-runner verify --url= 2\u003e\u00261) || status=$?\n\nif (( status == 143 )) || (( status == 124 )) ; then\n  echo \"'gitlab-runner verify' terminated by timeout, not a conclusive failure\" \u003e\u00262\n  exit 0\nelif (( status \u003e 0 )) ; then\n  exit ${status}\nfi\n\ngrep -qE \"is (alive|valid)\" \u003c\u003c\u003c\"${verify_output}\"\n","config.template.toml":"[[runners]]\n  name = \"kubernetes-runner\"\n  url = \"https://git.21-school.ru/\"\n  token = \"\"\n  executor = \"kubernetes\"\n  tags = \"kubernetes,docker\"\n  runUntagged = true\n  request_concurrency = 2\n  output_limit = 4096\n  [runners.kubernetes]\n    namespace = \"gitlab-runner\"\n    image = \"docker:stable\"\n    privileged = true\n    memory_limit = \"6Gi\"\n    cpu_limit = \"2\"\n    memory_request = \"4Gi\"\n    cpu_request = \"1\"\n    service_memory_limit = \"4Gi\"\n    service_memory_request = \"3Gi\"\n    service_cpu_limit = \"2\"\n    service_cpu_request = \"1\"\n    helper_memory_limit = \"512Mi\"\n    helper_memory_request = \"256Mi\"\n    helper_cpu_limit = \"500m\"\n    helper_cpu_request = \"200m\"\n    service_account = \"gitlab-runner\"\n    [[runners.kubernetes.volumes.empty_dir]]\n      name = \"docker-certs\"\n      mount_path = \"/certs/client\"\n      medium = \"Memory\"\n      \n","config.toml":"concurrent = 10\ncheck_interval = 3\nlog_level = \"info\"\nshutdown_timeout = 0\n\n[session_server]\n  session_timeout = 1800\n\n[[runners]]\n  name = \"kubernetes-runner\"\n  url = \"https://git.21-school.ru/\"\n  token = \"GR1348941mp5qGse_ARR7kBmy9M8Z\"\n  executor = \"kubernetes\"\n  tags = \"kubernetes,docker\"\n  runUntagged = true\n  request_concurrency = 2\n  output_limit = 4096\n  \n  [runners.kubernetes]\n    namespace = \"gitlab-runner\"\n    image = \"docker:stable\"\n    privileged = true\n    service_account = \"gitlab-runner\"\n    \n    [runners.kubernetes.resources]\n      requests = { cpu = \"1\", memory = \"4Gi\" }\n      limits = { cpu = \"2\", memory = \"6Gi\" }\n    \n    [runners.kubernetes.service_resources]\n      requests = { cpu = \"1\", memory = \"3Gi\" }\n      limits = { cpu = \"2\", memory = \"4Gi\" }\n    \n    [runners.kubernetes.helper_resources]\n      requests = { cpu = \"200m\", memory = \"256Mi\" }\n      limits = { cpu = \"500m\", memory = \"512Mi\" }\n    \n    [[runners.kubernetes.volumes.empty_dir]]\n      name = \"docker-certs\"\n      mount_path = \"/certs/client\"\n      medium = \"Memory\"\n","entrypoint":"#!/bin/bash\nset -e\n\nexport CONFIG_PATH_FOR_INIT=\"/home/gitlab-runner/.gitlab-runner/\"\nmkdir -p ${CONFIG_PATH_FOR_INIT}\ncp /configmaps/config.toml ${CONFIG_PATH_FOR_INIT}\n\nif [[ -f /secrets/accesskey \u0026\u0026 -f /secrets/secretkey ]]; then\n  export CACHE_S3_ACCESS_KEY=$(cat /secrets/accesskey)\n  export CACHE_S3_SECRET_KEY=$(cat /secrets/secretkey)\nfi\n\nif [[ -f /secrets/gcs-applicaton-credentials-file ]]; then\n  export GOOGLE_APPLICATION_CREDENTIALS=\"/secrets/gcs-applicaton-credentials-file\"\nelif [[ -f /secrets/gcs-application-credentials-file ]]; then\n  export GOOGLE_APPLICATION_CREDENTIALS=\"/secrets/gcs-application-credentials-file\"\nelse\n  if [[ -f /secrets/gcs-access-id \u0026\u0026 -f /secrets/gcs-private-key ]]; then\n    export CACHE_GCS_ACCESS_ID=$(cat /secrets/gcs-access-id)\n    export CACHE_GCS_PRIVATE_KEY=$(echo -e $(cat /secrets/gcs-private-key))\n  fi\nfi\n\nif [[ -f /secrets/azure-account-name \u0026\u0026 -f /secrets/azure-account-key ]]; then\n  export CACHE_AZURE_ACCOUNT_NAME=$(cat /secrets/azure-account-name)\n  export CACHE_AZURE_ACCOUNT_KEY=$(cat /secrets/azure-account-key)\nfi\n\nif [[ -f /secrets/runner-registration-token ]]; then\n  export REGISTRATION_TOKEN=$(cat /secrets/runner-registration-token)\nfi\n\nif [[ -f /secrets/runner-token ]]; then\n  export CI_SERVER_TOKEN=$(cat /secrets/runner-token)\nfi\n\nif ! sh /configmaps/register-the-runner; then\n  exit 1\nfi\n\nif ! bash /configmaps/pre-entrypoint-script; then\n  exit 1\nfi\n\nexec /entrypoint run \\\n  --working-directory=/home/gitlab-runner\n  \n","pre-entrypoint-script":"","register-the-runner":"#!/bin/sh\nsignal_handler() {\n  if [ ! -d \"/proc/$register_pid\" ]; then\n    wait $register_pid\n  fi\n  exit\n}\ntrap 'signal_handler' QUIT INT\n\nMAX_REGISTER_ATTEMPTS=30\n\nRUN_UNTAGGED=\"\"\nACCESS_LEVEL=\"\"\n\nif [ -n \"$CI_SERVER_TOKEN\" ] \u0026\u0026 [ \"${CI_SERVER_TOKEN#glrt-}\" != \"$CI_SERVER_TOKEN\" ]; then\n  RUN_UNTAGGED=\"\"\n  ACCESS_LEVEL=\"\"\n  unset REGISTER_LOCKED\n  unset RUNNER_TAG_LIST\nfi\n\nfor i in $(seq 1 \"${MAX_REGISTER_ATTEMPTS}\"); do\n  echo \"Registration attempt ${i} of ${MAX_REGISTER_ATTEMPTS}\"\n  /entrypoint register \\\n    ${RUN_UNTAGGED} \\\n    ${ACCESS_LEVEL} \\\n    --template-config /configmaps/config.template.toml \\\n    --non-interactive \u0026\n\n  register_pid=$!\n  wait $register_pid\n  retval=$?\n\n  if [ ${retval} = 0 ]; then\n    break\n  elif [ ${i} = ${MAX_REGISTER_ATTEMPTS} ]; then\n    exit 1\n  fi\n\n  sleep 5\ndone\n"},"kind":"ConfigMap","metadata":{"annotations":{"meta.helm.sh/release-name":"gitlab-runner","meta.helm.sh/release-namespace":"gitlab-runner"},"creationTimestamp":"2026-02-23T19:02:01Z","labels":{"app":"gitlab-runner","app.kubernetes.io/managed-by":"Helm","chart":"gitlab-runner-0.85.0","heritage":"Helm","release":"gitlab-runner"},"name":"gitlab-runner","namespace":"gitlab-runner","resourceVersion":"315724","uid":"b27704a3-38d3-492d-a0d4-020193650e4e"}}
+    meta.helm.sh/release-name: gitlab-runner
+    meta.helm.sh/release-namespace: gitlab-runner
+  creationTimestamp: "2026-02-23T19:02:01Z"
+  labels:
+    app: gitlab-runner
+    app.kubernetes.io/managed-by: Helm
+    chart: gitlab-runner-0.85.0
+    heritage: Helm
+    release: gitlab-runner
+  name: gitlab-runner
+  namespace: gitlab-runner
+  resourceVersion: "316322"
+  uid: b27704a3-38d3-492d-a0d4-020193650e4e

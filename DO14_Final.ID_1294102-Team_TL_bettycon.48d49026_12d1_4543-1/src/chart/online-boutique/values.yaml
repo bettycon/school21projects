@@ -3,7 +3,7 @@ replicaCount: 1
 image:
   repositoryPrefix: ""
   tag: "latest"
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
 
 frontend:
   enabled: true

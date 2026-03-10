@@ -12,14 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM --platform=$BUILDPLATFORM node:20.20.0-alpine@sha256:09e2b3d9726018aecf269bd35325f46bf75046a643a66d28360ec71132750ec8 AS builder
+FROM node:20-slim AS builder
 
 # Some packages (e.g. @google-cloud/profiler) require additional
 # deps for post-install scripts
-RUN apk add --update --no-cache \
+RUN apt-get update && apt-get install -y \
     python3 \
     make \
-    g++
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /usr/src/app
 
@@ -27,9 +28,7 @@ COPY package*.json ./
 
 RUN npm install --only=production
 
-FROM alpine:3.23.3@sha256:25109184c71bdad752c8312a8623239686a9a2071e8825f20acb8f2198c3f659
-
-RUN apk add --no-cache nodejs
+FROM node:20-slim
 
 WORKDIR /usr/src/app
 

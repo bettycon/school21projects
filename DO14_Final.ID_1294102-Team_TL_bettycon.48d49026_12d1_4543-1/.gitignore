@@ -73,7 +73,7 @@
 *.wav
 *.aiff
 *.aif
-*.mod
+!go.mod
 *.it
 *.s3m
 *.xm
@@ -121,7 +121,6 @@
 *.stl
  
 # Kernel Module Compile Results
-*.mod*
 *.cmd
 .tmp_versions/
 modules.order

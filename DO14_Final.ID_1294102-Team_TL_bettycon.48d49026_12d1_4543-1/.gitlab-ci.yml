@@ -1,99 +1,152 @@
 stages:
+  - test-unit
   - build
   - test
   - staging
   - prod
-
+  
 variables:
   DOCKER_HUB_USERNAME: "bettycon"
   PROJECT_NAME: "online-boutique"
+  DOCKER_HOST: tcp://docker:2375
+  DOCKER_TLS_CERTDIR: ""
+  DOCKER_DRIVER: overlay2
+  DOCKER_BUILDKIT: 0  
+  MAX_RETRIES: 3
+  RETRY_DELAY: 5
 
-.docker_build_template: &docker_build_template
+test-unit:
+  stage: test-unit
+  image: bettycon/test-runner:latest
+  script:
+    - cd src/app/src
+    
+    - for pkg in checkoutservice/money frontend/money frontend/validator; do
+        if [ -d "$pkg" ]; then
+          echo "=== Testing $pkg ===";
+          cd $pkg && go test -v && cd ../..;
+        fi
+      done
+    
+    - for service in productcatalogservice shippingservice; do
+        if [ -f "$service/${service}_test.go" ]; then
+          echo "=== Testing $service ===";
+          cd $service && go test -v && cd ..;
+        fi
+      done
+    
+    - if [ -d "adservice" ]; then
+        echo "=== Testing adservice (Java) ===";
+        cd adservice && ./gradlew test && cd ..;
+      fi
+    
+    - echo "=== All tests completed (cartservice skipped) ==="
+
+build:
+  stage: build
+  needs: ["test-unit"]
+  timeout: 3 hours 
   image: docker:20.10.16
   services:
     - name: docker:20.10.16-dind
       command: ["--tls=false"]
-  variables:
-    DOCKER_HOST: tcp://docker:2375
-    DOCKER_TLS_CERTDIR: ""
-  before_script:
-    - echo "ZGNrcl9wYXRfbWlrWHBtY1dIdVJnaE5lTUg0SWZ3TFlVM21nCg==" | base64 -d | docker login -u "$DOCKER_HUB_USERNAME" --password-stdin
-
-build:
-  stage: build
-  timeout: 2 hours
-  <<: *docker_build_template
   rules:
     - if: $CI_COMMIT_BRANCH =~ /^feature_/
-      when: on_success
-    - if: $CI_COMMIT_BRANCH =~ /^feature_/
-      when: manual
-      allow_failure: true
+  before_script:
+    - echo "ZGNrcl9wYXRfbWlrWHBtY1dIdVJnaE5lTUg0SWZ3TFlVM21nCg==" | base64 -d | docker login -u "$DOCKER_HUB_USERNAME" --password-stdin
+    - docker system prune -f
+    - docker builder prune -f
   script:
-    - cd src/app/src
+    - cd ./src/app/src
     - |
-      for service in frontend cartservice productcatalogservice currencyservice paymentservice; do
+      retry() {
+        local n=1
+        local max=$MAX_RETRIES
+        local delay=$RETRY_DELAY
+        while true; do
+          "$@" && break || {
+            if [[ $n -lt $max ]]; then
+              n=$((n+1))
+              echo "Command failed. Attempt $n/$max:"
+              sleep $delay;
+            else
+              echo "The command has failed after $n attempts."
+              return 1
+            fi
+          }
+        done
+      }
+      
+      for service in adservice emailservice productcatalogservice frontend recommendationservice checkoutservice loadgenerator shippingservice currencyservice paymentservice shoppingassistantservice; do
         if [ -d "$service" ] && [ -f "$service/Dockerfile" ]; then
-          echo "=== Building $service ==="
-          docker build -t $DOCKER_HUB_USERNAME/$PROJECT_NAME:$service-$CI_COMMIT_SHA ./$service
-          docker push $DOCKER_HUB_USERNAME/$PROJECT_NAME:$service-$CI_COMMIT_SHA
+          retry docker build -t $DOCKER_HUB_USERNAME/$PROJECT_NAME:$service-$CI_COMMIT_SHA ./$service
+          
+          echo "=== Pushing $service with retries ==="
+          retry docker push $DOCKER_HUB_USERNAME/$PROJECT_NAME:$service-$CI_COMMIT_SHA
+          
           echo "=== $service completed ==="
         else
           echo "=== Skipping $service - directory or Dockerfile not found ==="
         fi
       done
-  after_script:
-    - sleep 10
 
 test:
   stage: test
   needs: ["build"]
-  image: golang:1.22
+  image: dtzar/helm-kubectl:latest
   rules:
     - if: $CI_COMMIT_BRANCH =~ /^feature_/
   script:
-    - cd src/app/src
-    - echo "Running unit tests for Go services"
-    - cd productcatalogservice && go test ./... && cd ..
-    - cd frontend && go test ./... && cd ..
+    - NAMESPACE="ci-manual-$CI_COMMIT_SHA"
+    - kubectl create namespace "$NAMESPACE" || true
+    - cd src/app/helm-chart
+    - helm upgrade --install test-deploy . --namespace "$NAMESPACE" --set ingress.enabled=false --set adservice.image.repository="$DOCKER_HUB_USERNAME/$PROJECT_NAME" --set adservice.image.tag="adservice-$CI_COMMIT_SHA" --set emailservice.image.repository="$DOCKER_HUB_USERNAME/$PROJECT_NAME" --set emailservice.image.tag="emailservice-$CI_COMMIT_SHA" --set productcatalogservice.image.repository="$DOCKER_HUB_USERNAME/$PROJECT_NAME" --set productcatalogservice.image.tag="productcatalogservice-$CI_COMMIT_SHA" --set frontend.image.repository="$DOCKER_HUB_USERNAME/$PROJECT_NAME" --set frontend.image.tag="frontend-$CI_COMMIT_SHA" --set recommendationservice.image.repository="$DOCKER_HUB_USERNAME/$PROJECT_NAME" --set recommendationservice.image.tag="recommendationservice-$CI_COMMIT_SHA" --set checkoutservice.image.repository="$DOCKER_HUB_USERNAME/$PROJECT_NAME" --set checkoutservice.image.tag="checkoutservice-$CI_COMMIT_SHA" --set loadgenerator.image.repository="$DOCKER_HUB_USERNAME/$PROJECT_NAME" --set loadgenerator.image.tag="loadgenerator-$CI_COMMIT_SHA" --set shippingservice.image.repository="$DOCKER_HUB_USERNAME/$PROJECT_NAME" --set shippingservice.image.tag="shippingservice-$CI_COMMIT_SHA" --set currencyservice.image.repository="$DOCKER_HUB_USERNAME/$PROJECT_NAME" --set currencyservice.image.tag="currencyservice-$CI_COMMIT_SHA" --set paymentservice.image.repository="$DOCKER_HUB_USERNAME/$PROJECT_NAME" --set paymentservice.image.tag="paymentservice-$CI_COMMIT_SHA" --set shoppingassistantservice.image.repository="$DOCKER_HUB_USERNAME/$PROJECT_NAME" --set shoppingassistantservice.image.tag="shoppingassistantservice-$CI_COMMIT_SHA"    
+    - sleep 60
+    - kubectl get pods -n "$NAMESPACE"
+    - kubectl get svc -n "$NAMESPACE"
+    - apk add --no-cache nodejs npm
+    - npm install -g newman
+    - cd ../../test
+    - newman run online-boutique-tests.postman_collection.json --insecure --env-var "FRONTEND_HOST=frontend.$NAMESPACE.svc.cluster.local" --env-var "FRONTEND_PORT=80"
+  after_script:
+    - NAMESPACE="ci-manual-$CI_COMMIT_SHA"
+    - kubectl delete namespace "$NAMESPACE" || true
 
 staging:
   stage: staging
+  needs: ["test"]
   image: dtzar/helm-kubectl:latest
-  when: manual
-  only:
-    - tags
+  rules:
+    - if: $CI_COMMIT_BRANCH =~ /^feature_/
   script:
-    - NAMESPACE="staging-$(echo "$CI_COMMIT_TAG" | sed 's/\\./-/g')"
+    - NAMESPACE="staging-$CI_COMMIT_SHA"
     - kubectl create namespace "$NAMESPACE" || true
-    - cd src/chart/online-boutique
-    - helm upgrade --install online-boutique-staging . \
-        --namespace "$NAMESPACE" \
-        --set image.repositoryPrefix="$DOCKER_HUB_USERNAME/$PROJECT_NAME:" \
-        --set image.tag="$CI_COMMIT_SHA" \
-        --set ingress.enabled=true \
-        --set ingress.host="staging-${CI_COMMIT_TAG}.online-boutique.local" \
-        --timeout 10m
+    - cd src/app/helm-chart
+    - helm upgrade --install test-deploy . --namespace "$NAMESPACE" --set ingress.enabled=false --set adservice.image.repository="$DOCKER_HUB_USERNAME/$PROJECT_NAME" --set adservice.image.tag="adservice-$CI_COMMIT_SHA" --set emailservice.image.repository="$DOCKER_HUB_USERNAME/$PROJECT_NAME" --set emailservice.image.tag="emailservice-$CI_COMMIT_SHA" --set productcatalogservice.image.repository="$DOCKER_HUB_USERNAME/$PROJECT_NAME" --set productcatalogservice.image.tag="productcatalogservice-$CI_COMMIT_SHA" --set frontend.image.repository="$DOCKER_HUB_USERNAME/$PROJECT_NAME" --set frontend.image.tag="frontend-$CI_COMMIT_SHA" --set recommendationservice.image.repository="$DOCKER_HUB_USERNAME/$PROJECT_NAME" --set recommendationservice.image.tag="recommendationservice-$CI_COMMIT_SHA" --set checkoutservice.image.repository="$DOCKER_HUB_USERNAME/$PROJECT_NAME" --set checkoutservice.image.tag="checkoutservice-$CI_COMMIT_SHA" --set loadgenerator.image.repository="$DOCKER_HUB_USERNAME/$PROJECT_NAME" --set loadgenerator.image.tag="loadgenerator-$CI_COMMIT_SHA" --set shippingservice.image.repository="$DOCKER_HUB_USERNAME/$PROJECT_NAME" --set shippingservice.image.tag="shippingservice-$CI_COMMIT_SHA" --set currencyservice.image.repository="$DOCKER_HUB_USERNAME/$PROJECT_NAME" --set currencyservice.image.tag="currencyservice-$CI_COMMIT_SHA" --set paymentservice.image.repository="$DOCKER_HUB_USERNAME/$PROJECT_NAME" --set paymentservice.image.tag="paymentservice-$CI_COMMIT_SHA" --set shoppingassistantservice.image.repository="$DOCKER_HUB_USERNAME/$PROJECT_NAME" --set shoppingassistantservice.image.tag="shoppingassistantservice-$CI_COMMIT_SHA"    
+    - sleep 60
     - kubectl get pods -n "$NAMESPACE"
     - kubectl get svc -n "$NAMESPACE"
-
+  after_script:
+    - NAMESPACE="staging-$CI_COMMIT_SHA"
+    - kubectl delete namespace "$NAMESPACE" || true
+    
+ 
 prod:
   stage: prod
-  image: dtzar/helm-kubectl:latest
   when: manual
   only:
     - tags
+  needs: 
+    - job: "staging"
+      optional: true
+  image: dtzar/helm-kubectl:latest
   script:
-    - NAMESPACE="prod"
+    - NAMESPACE="prod-$(echo ${CI_COMMIT_TAG} | sed 's/\./-/g')"
     - kubectl create namespace "$NAMESPACE" || true
-    - cd src/chart/online-boutique
-    - helm upgrade --install online-boutique-prod . \
-        --namespace "$NAMESPACE" \
-        --set image.repositoryPrefix="$DOCKER_HUB_USERNAME/$PROJECT_NAME:" \
-        --set image.tag="$CI_COMMIT_SHA" \
-        --set ingress.enabled=true \
-        --set ingress.host="shop.online-boutique.local" \
-        --timeout 10m
+    - cd src/app/helm-chart
+    - helm upgrade --install test-deploy . --namespace "$NAMESPACE" --set ingress.enabled=false --set adservice.image.repository="$DOCKER_HUB_USERNAME/$PROJECT_NAME" --set adservice.image.tag="adservice-$CI_COMMIT_SHA" --set emailservice.image.repository="$DOCKER_HUB_USERNAME/$PROJECT_NAME" --set emailservice.image.tag="emailservice-$CI_COMMIT_SHA" --set productcatalogservice.image.repository="$DOCKER_HUB_USERNAME/$PROJECT_NAME" --set productcatalogservice.image.tag="productcatalogservice-$CI_COMMIT_SHA" --set frontend.image.repository="$DOCKER_HUB_USERNAME/$PROJECT_NAME" --set frontend.image.tag="frontend-$CI_COMMIT_SHA" --set recommendationservice.image.repository="$DOCKER_HUB_USERNAME/$PROJECT_NAME" --set recommendationservice.image.tag="recommendationservice-$CI_COMMIT_SHA" --set checkoutservice.image.repository="$DOCKER_HUB_USERNAME/$PROJECT_NAME" --set checkoutservice.image.tag="checkoutservice-$CI_COMMIT_SHA" --set loadgenerator.image.repository="$DOCKER_HUB_USERNAME/$PROJECT_NAME" --set loadgenerator.image.tag="loadgenerator-$CI_COMMIT_SHA" --set shippingservice.image.repository="$DOCKER_HUB_USERNAME/$PROJECT_NAME" --set shippingservice.image.tag="shippingservice-$CI_COMMIT_SHA" --set currencyservice.image.repository="$DOCKER_HUB_USERNAME/$PROJECT_NAME" --set currencyservice.image.tag="currencyservice-$CI_COMMIT_SHA" --set paymentservice.image.repository="$DOCKER_HUB_USERNAME/$PROJECT_NAME" --set paymentservice.image.tag="paymentservice-$CI_COMMIT_SHA" --set shoppingassistantservice.image.repository="$DOCKER_HUB_USERNAME/$PROJECT_NAME" --set shoppingassistantservice.image.tag="shoppingassistantservice-$CI_COMMIT_SHA"
+    - sleep 60
     - kubectl get pods -n "$NAMESPACE"
     - kubectl get svc -n "$NAMESPACE"
-
+  after_script:
+    - echo "Production deployment completed with tag ${CI_COMMIT_TAG}"

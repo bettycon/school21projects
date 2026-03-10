@@ -1,0 +1,50 @@
+concurrent = 2
+check_interval = 30
+log_level = "info"
+shutdown_timeout = 0
+
+[session_server]
+  session_timeout = 1800
+
+[[runners]]
+  name = "School21 Kubernetes Runner"
+  url = "https://git.21-school.ru/"
+  token = "glrtr-gSL_Svrvtjfm-etNBWT19W86MQpwOnU3bjgKdDozDg.01.160hhz5rq"
+  executor = "kubernetes"
+  request_concurrency = 4
+  
+  [runners.kubernetes]
+    namespace = "gitlab-runner"
+    image = "docker:stable"
+    privileged = true
+    
+    # Основные ресурсы пода
+    [runners.kubernetes.resources]
+      requests = { cpu = "1", memory = "4Gi" }
+      limits = { cpu = "2", memory = "6Gi" }
+    
+    # Ресурсы для сервиса DinD
+    [runners.kubernetes.service_resources]
+      requests = { cpu = "1", memory = "3Gi" }
+      limits = { cpu = "2", memory = "4Gi" }
+    
+    # Ресурсы для helper контейнера
+    [runners.kubernetes.helper_resources]
+      requests = { cpu = "200m", memory = "256Mi" }
+      limits = { cpu = "500m", memory = "512Mi" }
+    
+    service_account = "gitlab-runner"
+    
+    [[runners.kubernetes.services]]
+      name = "docker:dind"
+      alias = "docker"
+      command = ["dockerd-entrypoint.sh"]
+    
+    [runners.kubernetes.node_selector]
+      "kubernetes.io/arch" = "amd64"
+    
+    image_pull_policy = "if-not-present"
+    
+    [runners.kubernetes.container_env]
+      DOCKER_HOST = "tcp://docker:2375"
+      DOCKER_TLS_CERTDIR = ""

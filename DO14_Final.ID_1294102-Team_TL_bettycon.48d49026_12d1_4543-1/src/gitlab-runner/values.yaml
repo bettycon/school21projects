@@ -1,0 +1,67 @@
+gitlabUrl: https://git.21-school.ru/
+runnerRegistrationToken: GR1348941mp5qGse_ARR7kBmy9M8Z
+
+rbac:
+  create: true
+
+serviceAccount:
+  create: true
+  name: gitlab-runner
+
+namespace: gitlab-runner
+
+runners:
+  config: |
+    [[runners]]
+      name = "kubernetes-runner"
+      url = "https://git.21-school.ru/"
+      token = "{{.RegistrationToken}}"
+      executor = "kubernetes"
+      tags = "kubernetes,docker"
+      runUntagged = true
+      request_concurrency = 2
+      output_limit = 4096
+      
+      [runners.kubernetes]
+        namespace = "gitlab-runner"
+        image = "docker:stable"
+        privileged = true
+        service_account = "gitlab-runner"
+        
+        # Основные ресурсы пода
+        [runners.kubernetes.resources]
+          requests = {
+            cpu = "1",
+            memory = "4Gi"
+          }
+          limits = {
+            cpu = "2",
+            memory = "6Gi"
+          }
+        
+        # Ресурсы для сервиса DinD
+        [runners.kubernetes.service_resources]
+          requests = {
+            cpu = "1",
+            memory = "3Gi"
+          }
+          limits = {
+            cpu = "2",
+            memory = "4Gi"
+          }
+        
+        # Ресурсы для helper контейнера
+        [runners.kubernetes.helper_resources]
+          requests = {
+            cpu = "200m",
+            memory = "256Mi"
+          }
+          limits = {
+            cpu = "500m",
+            memory = "512Mi"
+          }
+        
+        [[runners.kubernetes.volumes.empty_dir]]
+          name = "docker-certs"
+          mount_path = "/certs/client"
+          medium = "Memory"
